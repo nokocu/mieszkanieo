@@ -1,6 +1,5 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
-/* Custom Delta styles - based on the original polished design */
 
 .bi {
   vertical-align: -.125em;
@@ -48,58 +47,29 @@
    overflow: hidden;
 }
 
-.btn-primary {
-  --bs-btn-color: black;
-  --bs-btn-bg: #c3ff00;
-  --bs-btn-border-color: #c3ff00;
-  --bs-btn-hover-color: rgb(0, 0, 0);
-  --bs-btn-hover-bg: rgb(163, 212, 0);
-  --bs-btn-hover-border-color: rgb(163, 212, 0);
-  --bs-btn-focus-shadow-rgb: 49,132,253;
-  --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #c3ff00;
-  --bs-btn-active-border-color: #c3ff00;
-  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
-  --bs-btn-disabled-color: #fff;
-  --bs-btn-disabled-bg: #c3ff00;
-  --bs-btn-disabled-border-color: #0d6efd;
+.navbar.expanded + main {
+  margin-top: 100px;
 }
 
-/* Enhanced navbar expansion styles */
-.navbar.expanded {
-  padding-bottom: 1rem;
-}
-
-.expanded-panel {
-  backdrop-filter: blur(10px);
-  border-radius: 0 0 8px 8px;
-}
-
-.form-check-input:checked {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-}
-
-.form-check-input:focus {
-  border-color: #86b7fe;
-  outline: 0;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
 
 .btn.active {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-  color: white;
+  background-color: #c3ff00;
+  border-color: #c3ff00;
+  color: #000;
 }
 
-/* Smooth transitions for navbar expansion */
-.navbar {
-  transition: all 0.3s ease;
+.btn-primary {
+  background-color: #c3ff00;
+  border-color: #c3ff00;
+  color: #000;
 }
 
-.expanded-panel {
-  animation: slideDown 0.3s ease;
+.btn-primary:hover {
+  background-color: #b3e600;
+  border-color: #b3e600;
+  color: #000;
 }
+
 
 @keyframes slideDown {
   from {
@@ -112,7 +82,6 @@
   }
 }
 
-/* Set dark theme by default */
-html[data-bs-theme="dark"] {
-  --bs-body-bg: var(--bs-gray-900);
-}
+
+
+

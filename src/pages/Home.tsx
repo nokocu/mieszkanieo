@@ -34,7 +34,6 @@ const Home: React.FC = () => {
   }, [filters])
 
   const handleFiltersChange = (newFilters: PropertyFilters) => {
-    console.log('Filters changed:', newFilters)
     setFilters(newFilters)
   }
 

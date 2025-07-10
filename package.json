@@ -10,7 +10,9 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\"",
-    "test": "vitest"
+    "test": "vitest",
+    "frontend": "vite",
+    "backend": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.12.2",
