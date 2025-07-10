@@ -387,13 +387,13 @@ class PropertyScraper:
             # extract details
             rooms = 0
             area = 0
-            level = 0
+            level = None 
             
             if "details" in selectors:
                 detail_config = selectors["details"]
                 
                 if isinstance(detail_config, dict) and "area" in detail_config:
-                    # complex details extraction (like nieruchomosci)
+                    # complex details extraction (for nieruchomosci)
                     if "area" in detail_config:
                         area_selector = detail_config["area"]
                         area_text = self.safe_extract(listing, [area_selector])
@@ -435,6 +435,7 @@ class PropertyScraper:
                     if len(detail_spans) >= 2:
                         rooms = self.extract_numbers(detail_spans[0].get_text(strip=True))
                         area = self.extract_area(detail_spans[1].get_text(strip=True))
+
             
             # generate unique ID
             property_id = hashlib.md5(link.encode()).hexdigest()[:12]
