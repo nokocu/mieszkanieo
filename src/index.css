@@ -65,14 +65,51 @@
   --bs-btn-disabled-border-color: #0d6efd;
 }
 
-.form-check-input:checked {
-  filter: invert();
-  background-color: #3c00ff;
-  border-color: #3c00ff;
+/* Enhanced navbar expansion styles */
+.navbar.expanded {
+  padding-bottom: 1rem;
 }
 
-.logeo {
-  height: 52px;
+.expanded-panel {
+  backdrop-filter: blur(10px);
+  border-radius: 0 0 8px 8px;
+}
+
+.form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.form-check-input:focus {
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn.active {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+}
+
+/* Smooth transitions for navbar expansion */
+.navbar {
+  transition: all 0.3s ease;
+}
+
+.expanded-panel {
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Set dark theme by default */

@@ -35,7 +35,6 @@ app.add_middleware(
 
 # dependency function for query parameters
 def get_property_filters(
-    city: str = Query(default="krak"),
     sites: Optional[List[str]] = Query(default=None),
     price_min: Optional[int] = Query(default=None),
     price_max: Optional[int] = Query(default=None),
@@ -54,7 +53,6 @@ def get_property_filters(
         site_enums = [PropertySiteEnum(site) for site in sites if site in PropertySiteEnum.__members__.values()]
     
     return PropertyFilters(
-        city=city,
         sites=site_enums,
         price_min=price_min,
         price_max=price_max,

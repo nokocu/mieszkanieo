@@ -16,7 +16,6 @@ export interface Property {
 export type PropertySite = 'allegro' | 'gethome' | 'nieruchomosci' | 'olx' | 'otodom';
 
 export interface PropertyFilters {
-  city: string;
   sites: PropertySite[];
   priceMin?: number;
   priceMax?: number;

@@ -11,15 +11,14 @@ class PropertyService:
         """get properties with applied filters"""
         query = db.query(Property)
         
-        # city filter - search in address
-        if filters.city and filters.city.strip():
-            city_filter = f"%{filters.city.lower()}%"
-            query = query.filter(Property.address.ilike(city_filter))
-        
         # site filters
-        if filters.sites:
-            site_names = [site.value for site in filters.sites]
-            query = query.filter(Property.site.in_(site_names))
+        if filters.sites is not None:
+            if len(filters.sites) == 0:
+                # If sites array is empty but not None, show no results
+                query = query.filter(Property.site.in_([]))
+            else:
+                site_names = [site.value for site in filters.sites]
+                query = query.filter(Property.site.in_(site_names))
         
         # price filters
         if filters.price_min is not None:

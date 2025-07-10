@@ -3,17 +3,15 @@ import { Property, PropertyFilters } from '../types'
 import { propertyService } from '../services/propertyService'
 import Header from '../components/Header'
 import PropertyCard from '../components/PropertyCard'
-import PropertyFilter from '../components/PropertyFilter'
 
 const Home: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [city, setCity] = useState('krak')
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false)
+  const [isRefreshExpanded, setIsRefreshExpanded] = useState(false)
   const [filters, setFilters] = useState<PropertyFilters>({
-    city: 'krak',
-    sites: [],
+    sites: ['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'], // Start with all sites selected
     sortBy: 'price_asc'
   })
 
@@ -32,25 +30,26 @@ const Home: React.FC = () => {
   }
 
   useEffect(() => {
-    const updatedFilters = { ...filters, city }
-    setFilters(updatedFilters)
     fetchProperties()
-  }, [city])
-
-  const handleCityChange = (newCity: string) => {
-    setCity(newCity)
-  }
+  }, [filters])
 
   const handleFiltersChange = (newFilters: PropertyFilters) => {
+    console.log('Filters changed:', newFilters)
     setFilters(newFilters)
   }
 
-  const handleApplyFilters = () => {
-    fetchProperties()
+  const handleFiltersToggle = () => {
+    setIsFilterExpanded(!isFilterExpanded)
+    setIsRefreshExpanded(false) // Close refresh panel if open
   }
 
-  const handleRefresh = () => {
-    fetchProperties()
+  const handleRefreshToggle = () => {
+    setIsRefreshExpanded(!isRefreshExpanded)
+    setIsFilterExpanded(false) // Close filter panel if open
+  }
+
+  const handleScrapeClick = () => {
+    // TODO: scraping
   }
 
   if (loading && properties.length === 0) {
@@ -66,14 +65,19 @@ const Home: React.FC = () => {
   return (
     <div>
       <Header 
-        city={city}
-        onCityChange={handleCityChange}
-        onFiltersClick={() => setIsFilterModalOpen(true)}
-        onRefreshClick={handleRefresh}
+        isFilterExpanded={isFilterExpanded}
+        isRefreshExpanded={isRefreshExpanded}
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        onFiltersToggle={handleFiltersToggle}
+        onRefreshToggle={handleRefreshToggle}
+        onScrapeClick={handleScrapeClick}
       />
 
       <main>
         <section className="py-3"></section>
+        {/* Add extra spacing when navbar is expanded */}
+        {(isFilterExpanded || isRefreshExpanded) && <section className="py-4"></section>}
 
         <div className="album py-5 bg-body-tertiary">
           <div className="container">
@@ -105,14 +109,6 @@ const Home: React.FC = () => {
           </div>
         </div>
       </main>
-
-      <PropertyFilter
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        onApplyFilters={handleApplyFilters}
-      />
     </div>
   )
 }

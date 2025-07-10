@@ -36,7 +36,6 @@ class PropertyResponse(PropertyBase):
         from_attributes = True
 
 class PropertyFilters(BaseModel):
-    city: str = "krakow"
     sites: Optional[List[PropertySiteEnum]] = None
     price_min: Optional[int] = None
     price_max: Optional[int] = None

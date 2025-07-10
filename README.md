@@ -14,15 +14,16 @@ Real estate listing aggregator for the Polish market. Scrapes multiple sites and
 
 - Multi-site scraping - Allegro, OLX, GetHome, Otodom, Nieruchomości Online
 - Advanced filtering by price, area, rooms, floor level, location
+- Real-time filter updates with expandable navbar interface
+- Responsive web interface with modern Bootstrap 5 design
 - Background job processing for data collection
-- Responsive web interface with real-time updates
 
 ## Quick Start
 
 ```bash
 # Clone and setup
 git clone <repo-url>
-cd delta-real-estate
+cd delta
 
 # With Docker (recommended)
 docker-compose up -d
@@ -35,14 +36,14 @@ npm run dev
 
 **Access:**
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API docs: http://localhost:8000/docs
+- Backend API: http://localhost:8001
+- API docs: http://localhost:8001/docs
 
 ## API Usage
 
 Get properties:
 ```http
-GET /api/properties?city=krakow&price_min=1000&price_max=3000
+GET /api/properties?sites=gethome&sites=olx&price_min=1000&price_max=3000
 ```
 
 Start scraping:
