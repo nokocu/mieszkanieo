@@ -12,7 +12,16 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\"",
     "test": "vitest",
     "frontend": "vite",
-    "backend": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+    "backend": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "docker:start": "docker-compose up -d",
+    "docker:stop": "docker-compose down",
+    "docker:build": "docker-compose build",
+    "docker:dev": "docker-compose up",
+    "docker:logs": "docker-compose logs -f",
+    "docker:clean": "docker-compose down -v",
+    "test:scraping": "python test_scraping.py",
+    "test:mock": "curl -X GET http://localhost:8000/api/test/mock-data",
+    "test:health": "curl -X GET http://localhost:8000/api/health"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.12.2",

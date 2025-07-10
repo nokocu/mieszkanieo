@@ -20,24 +20,93 @@ Real estate listing aggregator for the Polish market. Scrapes multiple sites and
 
 ## Quick Start
 
+## Quick Start
+
+### Prerequisites
+
+For Docker setup, you'll need:
+- **Docker Desktop** - [Download here](https://www.docker.com/products/docker-desktop/)
+- **Git** - [Download here](https://git-scm.com/downloads)
+
+### Using Docker (Recommended)
+
+The easiest way to run the entire application:
+
 ```bash
-# Clone and setup
+# Clone the repository
 git clone <repo-url>
 cd delta
 
-# With Docker (recommended)
+# Copy environment file
+copy .env.example .env  # Windows
+# cp .env.example .env  # Mac/Linux
+
+# Start all services with Docker Compose
 docker-compose up -d
 
-# Manual setup
-cd backend && pip install -r requirements.txt
-cd .. && npm install
-npm run dev
+# Or use the helper scripts
+./docker.sh start     # Linux/Mac
+docker.bat start      # Windows
+
+# Or use npm scripts
+npm run docker:start
 ```
 
-**Access:**
+**Access Points:**
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:8001
-- API docs: http://localhost:8001/docs
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
+- Database: localhost:5432
+
+### Manual Development Setup
+
+For development without Docker:
+
+```bash
+# Backend setup
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Frontend setup
+cd ..
+npm install
+
+# Run both services
+npm run backend  # Terminal 1
+npm run frontend # Terminal 2
+```
+
+### Docker Commands
+
+```bash
+# Build and start all services
+docker-compose up --build
+
+# Start in background
+docker-compose up -d
+
+# View service logs
+docker-compose logs -f [service_name]
+
+# Stop all services
+docker-compose down
+
+# Remove volumes (reset database)
+docker-compose down -v
+
+# Rebuild specific service
+docker-compose build [service_name]
+
+# Using npm scripts
+npm run docker:start    # Start services
+npm run docker:stop     # Stop services
+npm run docker:build    # Build services
+npm run docker:dev      # Start in foreground
+npm run docker:logs     # View logs
+npm run docker:clean    # Clean up volumes
+```
 
 ## API Usage
 
@@ -51,6 +120,8 @@ Start scraping:
 POST /api/scrape
 {"city": "warszawa"}
 ```
+
+All API endpoints are available at `http://localhost:8001` when using Docker.
 
 ## Architecture
 
