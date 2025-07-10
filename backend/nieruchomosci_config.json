@@ -1,0 +1,67 @@
+{
+    "name": "Nieruchomosci-Online.pl",
+    "site_name": "nieruchomosci",
+    "base_domain": "https://nieruchomosci-online.pl",
+    "base_url": "https://nieruchomosci-online.pl/szukaj.html?3,mieszkanie,wynajem,,{city}&o=price,asc&p=1",
+    "page_url": "https://nieruchomosci-online.pl/szukaj.html?3,mieszkanie,wynajem,,{city}&o=price,asc&p={page}",
+    "default_pages": 50,
+    "delay_between_pages": 2,
+    
+    "selectors": {
+        "wait_element": {
+            "type": "css",
+            "value": "path"
+        },
+        
+        "pagination": {
+            "tag": "div",
+            "class": "no-pagination",
+            "item_tag": "span"
+        },
+        
+        "listings_container": {
+            "tag": "div",
+            "class": "column-container column_default"
+        },
+        
+        "listing_item": {
+            "tag": "div",
+            "class": "tile-tile"
+        },
+        
+        "link": {
+            "tag": "a",
+            "class": "tabCtrl"
+        },
+        
+        "title": [
+            ["a", ""],
+            ["h3", ""],
+            ["h2", ""]
+        ],
+        
+        "image": {
+            "tag": "img",
+            "class": "",
+            "attribute": "src"
+        },
+        
+        "address": [
+            ["p", "province"],
+            ["div", "address"],
+            ["span", "location"]
+        ],
+        
+        "price": [
+            ["span", ""],
+            ["div", "price"],
+            ["span", "price"]
+        ],
+        
+        "details": {
+            "area": ["span", "area"],
+            "level": ["div", ""],
+            "rooms": ["div", ""]
+        }
+    }
+}

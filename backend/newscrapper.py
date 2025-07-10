@@ -56,7 +56,7 @@ class PropertyScraper:
             return False
     
     def safe_extract(self, soup, selectors: list) -> str:
-        """Safely extract text using multiple fallback selectors"""
+        """Safely extract text using multiple fallback selectors - searches entire subtree"""
         for selector_info in selectors:
             try:
                 if len(selector_info) == 2:  # tag, class
@@ -67,6 +67,43 @@ class PropertyScraper:
                     element = soup.find(tag, class_=class_name) if class_name else soup.find(tag)
                     if element:
                         return element.get(attribute, "")
+                elif len(selector_info) == 4:  # tag, class, nested_tag, index OR extract_type
+                    tag, class_name, nested_tag, index_or_type = selector_info
+                    element = soup.find(tag, class_=class_name) if class_name else soup.find(tag)
+                    if element:
+                        if index_or_type.isdigit():  # it's an index
+                            nested_elements = element.find_all(nested_tag)
+                            if len(nested_elements) > int(index_or_type):
+                                nested = nested_elements[int(index_or_type)]
+                                return nested.get_text(strip=True)
+                        else:  # it's an extract type
+                            nested = element.find(nested_tag)
+                            if nested:
+                                if index_or_type == "text":
+                                    return nested.get_text(strip=True)
+                                else:
+                                    return nested.get(index_or_type, "")
+                elif len(selector_info) == 5:  # tag, class, nested_tag, index, extract_type
+                    tag, class_name, nested_tag, index, extract_type = selector_info
+                    element = soup.find(tag, class_=class_name) if class_name else soup.find(tag)
+                    if element:
+                        nested_elements = element.find_all(nested_tag)
+                        if len(nested_elements) > int(index):
+                            nested = nested_elements[int(index)]
+                            if extract_type == "text":
+                                return nested.get_text(strip=True)
+                            else:
+                                return nested.get(extract_type, "")
+                elif len(selector_info) == 6:  # complex nested selectors for nieruchomosci
+                    tag, class_name, nested_tag, nested_class, index, final_tag = selector_info
+                    element = soup.find(tag, class_=class_name) if class_name else soup.find(tag)
+                    if element:
+                        nested_elements = element.find_all(nested_tag, class_=nested_class)
+                        if len(nested_elements) > int(index):
+                            nested = nested_elements[int(index)]
+                            final = nested.find(final_tag)
+                            if final:
+                                return final.get_text(strip=True)
                 else:
                     continue
                     
@@ -77,13 +114,73 @@ class PropertyScraper:
         return ""
     
     def extract_numbers(self, text: str) -> int:
-        """Extract numbers from text, handling commas and spaces"""
+        """Extract numbers from text, handling commas, spaces, and special characters"""
         if not text:
             return 0
-        # remove common non-numeric characters
-        clean_text = text.replace(" ", "").replace(",", "").replace(".", "").replace("zł", "")
+        # remove common non-numeric characters including ² symbol
+        clean_text = text.replace(" ", "").replace(",", "").replace(".", "").replace("zł", "").replace("m²", "").replace("²", "")
         numbers = "".join(char for char in clean_text if char.isdigit())
-        return int(numbers) if numbers else 0
+        if numbers:
+            # limit to reasonable range for SQLite INTEGER
+            num = int(numbers)
+            return min(num, 2147483647)  # SQLite INTEGER max value
+        return 0
+    
+    def extract_area(self, text: str) -> int:
+        """Extract area from text, handling decimal values properly"""
+        if not text:
+            return 0
+        
+        # clean text but preserve decimal structure
+        clean_text = text.replace(" ", "").replace("m²", "").replace("²", "").replace("zł", "")
+        
+        # handle comma 
+        if "," in clean_text:
+            # split by comma and take only the integer part
+            parts = clean_text.split(",")
+            if parts[0].isdigit():
+                num = int(parts[0])
+                return min(num, 2147483647)
+        
+        # handle dot as decimal separator
+        if "." in clean_text:
+            parts = clean_text.split(".")
+            if parts[0].isdigit():
+                num = int(parts[0])
+                return min(num, 2147483647)
+        
+        # if no decimal separators, extract all digits
+        numbers = "".join(char for char in clean_text if char.isdigit())
+        if numbers:
+            num = int(numbers)
+            return min(num, 2147483647)
+        return 0
+    
+    def extract_floor(self, text: str) -> int:
+        """Extract floor number from text, handling formats like '5/9' correctly"""
+        if not text:
+            return 0
+        
+        # handle special cases first
+        if "parter" in text.lower():
+            return 0
+        
+        # clean the text
+        clean_text = text.strip()
+        
+        # handle floor formats like "5/9" - take only the first number
+        if "/" in clean_text:
+            parts = clean_text.split("/")
+            first_part = parts[0].strip()
+            numbers = "".join(char for char in first_part if char.isdigit())
+            if numbers:
+                return min(int(numbers), 2147483647)
+        
+        # handle simple numbers
+        numbers = "".join(char for char in clean_text if char.isdigit())
+        if numbers:
+            return min(int(numbers), 2147483647)
+        return 0
     
     def get_page_count(self, city: str, site_config: dict) -> int:
         """Get total page count using site-specific configuration"""
@@ -130,7 +227,8 @@ class PropertyScraper:
                     else:
                         print("No numeric page elements found")
             
-            print(f"Could not determine page count, using default: {site_config['default_pages']}")
+            # For sites without pagination info, use dynamic discovery
+            print(f"Could not determine page count, will use dynamic discovery (default: {site_config['default_pages']})")
             return site_config["default_pages"]
             
         except Exception as e:
@@ -195,13 +293,34 @@ class PropertyScraper:
             
             # extract link - required field
             link_config = selectors["link"]
-            link_elem = listing.find(link_config["tag"], class_=link_config["class"])
             
-            if not link_elem or not link_elem.get("href"):
+            if link_config.get("nested"):
+                # handle nested link extraction (like h2 > a)
+                parent_elem = listing.find(link_config["tag"], class_=link_config["class"])
+                if parent_elem:
+                    link_elem = parent_elem.find(link_config["nested"]["tag"])
+                    if link_elem:
+                        link = link_elem.get("href", "")
+                    else:
+                        link = ""
+                else:
+                    link = ""
+            else:
+                # standard link extraction - search anywhere within listing
+                link_elem = listing.find(link_config["tag"], class_=link_config["class"])
+                link = link_elem.get("href", "") if link_elem else ""
+            
+            if not link:
                 print(f"   Listing {index}: No link found")
                 return None
             
-            link = site_config["base_domain"] + link_elem["href"]
+            # ensure full URL
+            if link.startswith("http"):
+                pass  # already full URL
+            elif link.startswith("/"):
+                link = site_config["base_domain"] + link
+            else:
+                link = site_config["base_domain"] + "/" + link
             
             # extract title
             title = self.safe_extract(listing, selectors["title"])
@@ -222,25 +341,100 @@ class PropertyScraper:
                             image_url = source_elem.get(image_config["attribute"], "")
                     else:
                         image_url = picture_elem.get(image_config["attribute"], "")
+                    
+                    # handle image transformations
+                    if image_config.get("transform") == "high_res":
+                        # nieruchomosci specific: convert low res to high res
+                        if image_url:
+                            img_parts = image_url.split("/")
+                            if len(img_parts) >= 2:
+                                res_part = list(img_parts[-2])
+                                if len(res_part) > 0:
+                                    res_part[-1] = "l"  # change last character to 'l' for large
+                                    img_parts[-2] = "".join(res_part)
+                                    image_url = "/".join(img_parts)
             
             # extract address
             address = self.safe_extract(listing, selectors["address"])
             
             # extract price
-            price_text = self.safe_extract(listing, selectors["price"])
+            price_text = ""
+            price_selectors = selectors["price"]
+            for selector_info in price_selectors:
+                if len(selector_info) == 2:
+                    tag, class_name = selector_info
+                    if tag == "span" and class_name == "":
+                        # find span containing "zł"
+                        price_spans = listing.find_all("span")
+                        for span in price_spans:
+                            span_text = span.get_text(strip=True)
+                            if "zł" in span_text and any(char.isdigit() for char in span_text):
+                                price_text = span_text
+                                break
+                        if price_text:
+                            break
+                    else:
+                        price_text = self.safe_extract(listing, [selector_info])
+                        if price_text:
+                            break
+                else:
+                    price_text = self.safe_extract(listing, [selector_info])
+                    if price_text:
+                        break
+            
             price = self.extract_numbers(price_text)
             
             # extract details
             rooms = 0
             area = 0
+            level = 0
             
             if "details" in selectors:
                 detail_config = selectors["details"]
-                detail_spans = listing.find_all(detail_config["tag"], class_=detail_config["class"])
                 
-                if len(detail_spans) >= 2:
-                    rooms = self.extract_numbers(detail_spans[0].get_text(strip=True))
-                    area = self.extract_numbers(detail_spans[1].get_text(strip=True))
+                if isinstance(detail_config, dict) and "area" in detail_config:
+                    # complex details extraction (like nieruchomosci)
+                    if "area" in detail_config:
+                        area_selector = detail_config["area"]
+                        area_text = self.safe_extract(listing, [area_selector])
+                        area = self.extract_area(area_text)
+                    
+                    if "rooms" in detail_config:
+                        # search for div containing "Liczba pokoi:"
+                        divs = listing.find_all("div")
+                        for div in divs:
+                            div_text = div.get_text(strip=True)
+                            if "Liczba pokoi:" in div_text:
+                                # extract only the part after "Liczba pokoi:"
+                                room_part = div_text.split("Liczba pokoi:")[-1].strip()
+                                # take only the first word/number
+                                room_value = room_part.split()[0] if room_part.split() else ""
+                                rooms = self.extract_numbers(room_value)
+                                break
+                    
+                    if "level" in detail_config:
+                        # search for div containing "Piętro:"
+                        divs = listing.find_all("div")
+                        for div in divs:
+                            div_text = div.get_text(strip=True)
+                            if "Piętro:" in div_text:
+                                # extract only the part after "Piętro:"
+                                level_part = div_text.split("Piętro:")[-1].strip()
+                                # take only the first word/number
+                                level_value = level_part.split()[0] if level_part.split() else ""
+                                # handle special cases like "parter" = 0
+                                if "parter" in level_value.lower():
+                                    level = 0
+                                else:
+                                    level = self.extract_floor(level_value)
+                                break
+                else:
+                    # simple details extraction (like gethome)
+                    detail_spans = listing.find_all(detail_config["tag"], class_=detail_config["class"])
+                    
+                    if len(detail_spans) >= 2:
+                        rooms = self.extract_numbers(detail_spans[0].get_text(strip=True))
+                        area = self.extract_area(detail_spans[1].get_text(strip=True))
             
             # generate unique ID
             property_id = hashlib.md5(link.encode()).hexdigest()[:12]
@@ -251,7 +445,7 @@ class PropertyScraper:
                 "price": price,
                 "area": area,
                 "rooms": rooms,
-                "level": 0,  # most sites dont show level consistently
+                "level": level,
                 "address": address or city.title(),  # default to city if no address
                 "site": site_config["site_name"],
                 "link": link,
@@ -331,12 +525,13 @@ class PropertyScraper:
             if max_pages:
                 total_pages = min(total_pages, max_pages)
             
-            print(f"Will scrape {total_pages} pages from {site_config['name']}")
+            print(f"Will scrape up to {total_pages} pages from {site_config['name']}")
             
             all_properties = []
+            page = 1
             
-            # scrape each page
-            for page in range(1, total_pages + 1):
+            # scrape pages dynamically
+            while page <= total_pages:
                 print(f"\n{'='*50}")
                 print(f"SCRAPING PAGE {page}/{total_pages}")
                 print('='*50)
@@ -353,10 +548,11 @@ class PropertyScraper:
                 print(f"Total so far: {len(all_properties)} properties")
                 
                 # respectful delay between pages
-                if page < total_pages:
-                    delay = site_config.get("delay_between_pages", 3)
-                    print(f"Waiting {delay} seconds before next page...")
-                    time.sleep(delay)
+                delay = site_config.get("delay_between_pages", 3)
+                print(f"Waiting {delay} seconds before next page...")
+                time.sleep(delay)
+                
+                page += 1
             
             print(f"\nScraping complete")
             print(f"Total properties found: {len(all_properties)}")
@@ -421,7 +617,7 @@ def main():
         print(f"Property Scraper - {site_config['name']}")
         print("=" * 50)
         
-        scraper = PropertyScraper(headless=False)
+        scraper = PropertyScraper(headless=True)
         
         result = scraper.scrape_site(city, site_config, max_pages)
         
