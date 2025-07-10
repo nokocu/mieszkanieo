@@ -57,8 +57,9 @@ const Header: React.FC<HeaderProps> = ({
     <nav className={`navbar navbar-expand-md navbar-dark fixed-top bg-body d-block shadow-lg ${isFilterExpanded || isRefreshExpanded ? 'expanded' : ''}`}>
       {/* Main navbar row */}
       <div className="container-fluid d-flex justify-content-center align-items-center">
+        work in progress&nbsp;
         <img className="logeo me-3" src="/logeo.png" height="52" alt="Logo" />
-
+        
         {/* Sort Toggle Button */}
         <button
           type="button"
@@ -82,7 +83,8 @@ const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Site Filter Buttons */}
-        {['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'].map(site => (
+        {/* {['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'].map(site => ( */}
+        {['gethome', 'nieruchomosci', 'olx'].map(site => (
           <button
             key={site}
             type="button"
@@ -93,8 +95,8 @@ const Header: React.FC<HeaderProps> = ({
             <img 
               src={getSiteIcon(site)} 
               alt={site} 
-              width="24" 
-              height="24" 
+              width="16" 
+              height="16" 
               style={{ borderRadius: '4px' }}
             />
           </button>
