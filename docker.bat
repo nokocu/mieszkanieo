@@ -33,7 +33,7 @@ if "%1"=="dev" goto :dev_mode
 goto :show_help
 
 :show_help
-echo Delta Real Estate Platform - Docker Helper
+echo mieszkanieo - Docker Helper
 echo.
 echo Usage: docker.bat [COMMAND]
 echo.
@@ -51,7 +51,7 @@ echo.
 goto :end
 
 :start_services
-echo [INFO] Starting Delta Real Estate Platform...
+echo [INFO] Starting mieszkanieo Real Estate Platform...
 docker-compose up -d
 if errorlevel 1 (
     echo [ERROR] Failed to start services

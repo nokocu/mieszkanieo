@@ -1,8 +1,8 @@
 {
-  "name": "delta-real-estate",
+  "name": "mieszkanieo",
   "private": true,
-  "version": "2.0.0",
-  "description": "Mieszkanieo",
+  "version": "3.0.0",
+  "description": "mieszkanieo",
   "type": "module",
   "scripts": {
     "dev": "vite",

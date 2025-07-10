@@ -46,7 +46,7 @@ check_docker() {
 
 # Show help
 show_help() {
-    echo "Delta Real Estate Platform - Docker Helper"
+    echo "mieszkanieo - Docker Helper"
     echo ""
     echo "Usage: $0 [COMMAND]"
     echo ""
@@ -65,7 +65,7 @@ show_help() {
 
 # Start services
 start_services() {
-    print_status "Starting Delta Real Estate Platform..."
+    print_status "Starting mieszkanieo Real Estate Platform..."
     docker-compose up -d
     print_status "Services started successfully!"
     print_status "Frontend: http://localhost:3000"

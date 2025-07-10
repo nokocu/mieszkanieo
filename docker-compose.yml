@@ -1,11 +1,11 @@
-# docker configuration for delta real estate platform
+# docker configuration for mieszkanieo
 
 services:
   # postgresql database
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: delta_real_estate
+      POSTGRES_DB: mieszkanieo
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     ports:
@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d delta_real_estate"]
+      test: ["CMD-SHELL", "pg_isready -U user -d mieszkanieo"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -26,7 +26,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://user:password@postgres:5432/delta_real_estate
+      DATABASE_URL: postgresql://user:password@postgres:5432/mieszkanieo
       SECRET_KEY: your-production-secret-key
       CORS_ORIGINS: http://localhost:3000
       DEBUG: false

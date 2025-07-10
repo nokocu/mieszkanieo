@@ -10,7 +10,7 @@ from database import get_db, engine
 from models import Base
 from schemas import PropertyResponse, PropertyFilters, ScrapeRequest, ScrapeResponse, PropertySiteEnum, SortByEnum
 from services.property_service import PropertyService
-from services.scraper_service import ScraperService
+# from services.scraper_service import ScraperService
 
 # load environment variables
 load_dotenv()
@@ -19,7 +19,7 @@ load_dotenv()
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Delta Real Estate API",
+    title="mieszkanieo API",
     description="Professional real estate scraping and filtering API",
     version="1.0.0"
 )
@@ -68,7 +68,6 @@ def get_property_filters(
 
 # services
 property_service = PropertyService()
-scraper_service = ScraperService()
 
 @app.get("/api/properties", response_model=List[PropertyResponse])
 async def get_properties(
@@ -114,7 +113,7 @@ async def get_scraping_status(job_id: str, db: Session = Depends(get_db)):
 @app.get("/api/health")
 async def health_check():
     """health check endpoint"""
-    return {"status": "healthy", "message": "delta real estate api is running"}
+    return {"status": "healthy", "message": "mieszkanieo api is running"}
 
 if __name__ == "__main__":
     import uvicorn

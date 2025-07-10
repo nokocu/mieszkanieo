@@ -1,0 +1,69 @@
+{
+    "name": "GetHome.pl",
+    "site_name": "gethome", 
+    "base_domain": "https://gethome.pl",
+    "base_url": "https://gethome.pl/mieszkania/do-wynajecia/{city}/?sort=price&page=1",
+    "page_url": "https://gethome.pl/mieszkania/do-wynajecia/{city}/?sort=price&page={page}",
+    "default_pages": 5,
+    "delay_between_pages": 3,
+    
+    "selectors": {
+        "wait_element": {
+            "type": "class",
+            "value": "oifs6rx"
+        },
+        
+        "pagination": {
+            "tag": "ul",
+            "class": "gh-1wjowh8 e134q4pk1",
+            "item_tag": "li"
+        },
+        
+        "listings_container": {
+            "tag": "ul",
+            "class": "o104vn0c"
+        },
+        
+        "listing_item": {
+            "tag": "li",
+            "class": "o1iv0nf6 lbk9u7d"
+        },
+        
+        "link": {
+            "tag": "a",
+            "class": "o13k6g1y"
+        },
+        
+        "title": [
+            ["div", "t7iinf2"],
+            ["h3", ""],
+            ["h2", ""]
+        ],
+        
+        "image": {
+            "tag": "picture",
+            "class": "activeSlide",
+            "nested": {
+                "tag": "source"
+            },
+            "attribute": "srcset"
+        },
+        
+        "address": [
+            ["address", ""],
+            ["div", "address"],
+            ["span", "location"]
+        ],
+        
+        "price": [
+            ["span", "o1bbpdyd"],
+            ["div", "price"],
+            ["span", "price"]
+        ],
+        
+        "details": {
+            "tag": "span",
+            "class": "ngl9ymk"
+        }
+    }
+}
