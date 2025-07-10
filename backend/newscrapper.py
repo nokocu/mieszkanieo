@@ -71,12 +71,12 @@ class PropertyScraper:
                     tag, class_name, nested_tag, index_or_type = selector_info
                     element = soup.find(tag, class_=class_name) if class_name else soup.find(tag)
                     if element:
-                        if index_or_type.isdigit():  # it's an index
+                        if index_or_type.isdigit():  # an index
                             nested_elements = element.find_all(nested_tag)
                             if len(nested_elements) > int(index_or_type):
                                 nested = nested_elements[int(index_or_type)]
                                 return nested.get_text(strip=True)
-                        else:  # it's an extract type
+                        else:  # an extract type
                             nested = element.find(nested_tag)
                             if nested:
                                 if index_or_type == "text":
@@ -112,18 +112,110 @@ class PropertyScraper:
             except Exception:
                 continue
         return ""
+
+    def find_element_with_data_attrs(self, soup, tag: str, class_name: str = "", data_testid: str = "", data_cy: str = ""):
+        """Find element using data attributes (for OLX support)"""
+        attrs = {}
+        if class_name:
+            attrs["class"] = class_name
+        if data_testid:
+            attrs["data-testid"] = data_testid
+        if data_cy:
+            attrs["data-cy"] = data_cy
+        
+        if attrs:
+            return soup.find(tag, attrs)
+        else:
+            return soup.find(tag)
+
+    def extract_best_image_from_srcset(self, srcset: str) -> str:
+        """Extract the highest quality image URL from srcset"""
+        if not srcset:
+            return ""
+        
+        # parse srcset format: "url1 150w, url2 200w, url3 300w, ..."
+        urls = []
+        for part in srcset.split(','):
+            part = part.strip()
+            if ' ' in part:
+                url = part.split(' ')[0]
+                urls.append(url)
+        
+        # return the last (highest quality) URL
+        return urls[-1] if urls else ""
+
+    def clean_address_from_date(self, address_text: str) -> str:
+        """Clean address by removing date information"""
+        if not address_text:
+            return ""
+        
+        # split by - and take the first part (location)
+        if " - " in address_text:
+            return address_text.split(" - ")[0].strip()
+        
+        return address_text.strip()
     
     def extract_numbers(self, text: str) -> int:
-        """Extract numbers from text, handling commas, spaces, and special characters"""
+        """Extract numbers from text, handling Polish number formatting like '1 201,46 zł'"""
         if not text:
             return 0
-        # remove common non-numeric characters including ² symbol
-        clean_text = text.replace(" ", "").replace(",", "").replace(".", "").replace("zł", "").replace("m²", "").replace("²", "")
-        numbers = "".join(char for char in clean_text if char.isdigit())
+        
+        # remove currency symbols and units first
+        clean_text = text.replace("zł", "").replace("m²", "").replace("²", "").strip()
+
+        # Remove spaces that are used as thousands separators
+        # But be careful not to remove spaces that separate different numbers
+        parts = clean_text.split()
+        if len(parts) == 1:
+            # single part, might have comma as decimal separator
+            number_part = parts[0]
+        else:
+            # multiple parts, check if they form a single number with space separators
+            number_candidates = []
+            current_number = ""
+            
+            for part in parts:
+                # check if this part looks like part of a number
+                if any(char.isdigit() for char in part) and all(char.isdigit() or char in ",.," for char in part):
+                    if current_number:
+                        current_number += part  # concatenate without space
+                    else:
+                        current_number = part
+                else:
+                    if current_number:
+                        number_candidates.append(current_number)
+                        current_number = ""
+            
+            if current_number:
+                number_candidates.append(current_number)
+            
+            # take the first valid number found
+            if number_candidates:
+                number_part = number_candidates[0]
+            else:
+                # fallback: just concatenate all parts that contain digits
+                number_part = "".join(part for part in parts if any(char.isdigit() for char in part))
+        
+        if not number_part:
+            return 0
+        
+        # decimal part - take only the integer part
+        if "," in number_part:
+            # decimal separator - take only integer part
+            integer_part = number_part.split(",")[0]
+        elif "." in number_part:
+            # decimal separator - take only integer part  
+            integer_part = number_part.split(".")[0]
+        else:
+            integer_part = number_part
+        
+        # extract only digits from the integer part
+        numbers = "".join(char for char in integer_part if char.isdigit())
+        
+        # xd
         if numbers:
-            # limit to reasonable range for SQLite INTEGER
             num = int(numbers)
-            return min(num, 2147483647)  # SQLite INTEGER max value
+            return min(num, 2147483647)
         return 0
     
     def extract_area(self, text: str) -> int:
@@ -203,18 +295,33 @@ class PropertyScraper:
             
             # find pagination using site config
             pagination_config = site_config["selectors"]["pagination"]
-            pagination = soup.find(pagination_config["tag"], class_=pagination_config["class"])
             
-            if pagination:
-                page_links = pagination.find_all(pagination_config["item_tag"])
+            # handle OLX pagination with data attributes
+            if pagination_config.get("data_testid"):
+                pagination_items = soup.find_all(pagination_config["tag"], attrs={"data-testid": pagination_config["data_testid"]})
+            else:
+                pagination = soup.find(pagination_config["tag"], class_=pagination_config["class"])
+                pagination_items = pagination.find_all(pagination_config["item_tag"]) if pagination else []
+            
+            if pagination_items:
+                page_links = pagination_items
                 print(f"Found {len(page_links)} pagination elements")
                 
                 if page_links:
                     # try to get all numeric page links and find the maximum
                     max_page = 0
                     
-                    for link in page_links:
-                        text = link.get_text(strip=True)
+                    for link_container in page_links:
+                        # for OLX, find the 'a' element inside the li
+                        if pagination_config.get("data_testid"):
+                            link_elem = link_container.find("a")
+                            if link_elem:
+                                text = link_elem.get_text(strip=True)
+                            else:
+                                text = link_container.get_text(strip=True)
+                        else:
+                            text = link_container.get_text(strip=True)
+                        
                         try:
                             page_num = int(text)
                             max_page = max(max_page, page_num)
@@ -227,7 +334,7 @@ class PropertyScraper:
                     else:
                         print("No numeric page elements found")
             
-            # For sites without pagination info, use dynamic discovery
+            # for sites without pagination info use dynamic discovery
             print(f"Could not determine page count, will use dynamic discovery (default: {site_config['default_pages']})")
             return site_config["default_pages"]
             
@@ -256,7 +363,12 @@ class PropertyScraper:
             
             # find the main listings container
             container_config = site_config["selectors"]["listings_container"]
-            listings_container = soup.find(container_config["tag"], class_=container_config["class"])
+            
+            # handle OLX container with data attributes
+            if container_config.get("data_testid"):
+                listings_container = soup.find(container_config["tag"], attrs={"data-testid": container_config["data_testid"]})
+            else:
+                listings_container = soup.find(container_config["tag"], class_=container_config["class"])
             
             if not listings_container:
                 print(f"No listings container found on page {page}")
@@ -264,7 +376,12 @@ class PropertyScraper:
             
             # get all listings
             listing_config = site_config["selectors"]["listing_item"]
-            listings = listings_container.find_all(listing_config["tag"], class_=listing_config["class"])
+            
+            # handle OLX listings with data attributes
+            if listing_config.get("data_cy"):
+                listings = listings_container.find_all(listing_config["tag"], attrs={"data-cy": listing_config["data_cy"]})
+            else:
+                listings = listings_container.find_all(listing_config["tag"], class_=listing_config["class"])
             print(f"Found {len(listings)} listings on page {page}")
             
             for i, listing in enumerate(listings):
@@ -306,9 +423,19 @@ class PropertyScraper:
                 else:
                     link = ""
             else:
-                # standard link extraction - search anywhere within listing
-                link_elem = listing.find(link_config["tag"], class_=link_config["class"])
-                link = link_elem.get("href", "") if link_elem else ""
+                # for OLX find any 'a' tag with href containing OLX pattern
+                if site_config["site_name"] == "olx":
+                    all_links = listing.find_all("a")
+                    link = ""
+                    for a_elem in all_links:
+                        href = a_elem.get("href", "")
+                        if href and ("/d/oferta/" in href or href.startswith("http")):
+                            link = href
+                            break
+                else:
+                    # standard link extraction - search anywhere within listing
+                    link_elem = listing.find(link_config["tag"], class_=link_config["class"])
+                    link = link_elem.get("href", "") if link_elem else ""
             
             if not link:
                 print(f"   Listing {index}: No link found")
@@ -353,48 +480,76 @@ class PropertyScraper:
                                     res_part[-1] = "l"  # change last character to 'l' for large
                                     img_parts[-2] = "".join(res_part)
                                     image_url = "/".join(img_parts)
+                    elif image_config.get("transform") == "best_quality":
+                        # OLX specific: extract best quality from srcset
+                        image_url = self.extract_best_image_from_srcset(image_url)
             
             # extract address
             address = self.safe_extract(listing, selectors["address"])
             
-            # extract price
+            # clean address for OLX (remove date information)
+            if site_config["site_name"] == "olx":
+                address = self.clean_address_from_date(address)
+            
+            # extract price - OLX specific handling
             price_text = ""
-            price_selectors = selectors["price"]
-            for selector_info in price_selectors:
-                if len(selector_info) == 2:
-                    tag, class_name = selector_info
-                    if tag == "span" and class_name == "":
-                        # find span containing "zł"
-                        price_spans = listing.find_all("span")
-                        for span in price_spans:
-                            span_text = span.get_text(strip=True)
-                            if "zł" in span_text and any(char.isdigit() for char in span_text):
-                                price_text = span_text
+            if site_config["site_name"] == "olx":
+                # OLX specific: look for price with data-testid="ad-price" or class css-1j3chf6
+                price_element = listing.find("p", attrs={"data-testid": "ad-price"})
+                if not price_element:
+                    price_element = listing.find("p", class_="css-1j3chf6")
+                if price_element:
+                    price_text = price_element.get_text(strip=True)
+            
+            if not price_text:
+                # fallback to general price extraction
+                price_selectors = selectors["price"]
+                for selector_info in price_selectors:
+                    if len(selector_info) == 2:
+                        tag, class_name = selector_info
+                        if tag == "span" and class_name == "":
+                            # find span containing zł
+                            price_spans = listing.find_all("span")
+                            for span in price_spans:
+                                span_text = span.get_text(strip=True)
+                                if "zł" in span_text and any(char.isdigit() for char in span_text):
+                                    price_text = span_text
+                                    break
+                            if price_text:
                                 break
-                        if price_text:
-                            break
+                        else:
+                            price_text = self.safe_extract(listing, [selector_info])
+                            if price_text:
+                                break
                     else:
                         price_text = self.safe_extract(listing, [selector_info])
                         if price_text:
                             break
-                else:
-                    price_text = self.safe_extract(listing, [selector_info])
-                    if price_text:
-                        break
             
             price = self.extract_numbers(price_text)
             
             # extract details
-            rooms = 0
+            rooms = None if site_config["site_name"] == "olx" else 0 
             area = 0
             level = None 
             
             if "details" in selectors:
                 detail_config = selectors["details"]
                 
+                # OLX specific area extraction
+                if site_config["site_name"] == "olx" and isinstance(detail_config, dict) and "area" in detail_config:
+                    # look for spans containing "m²"
+                    all_spans = listing.find_all("span")
+                    for span in all_spans:
+                        span_text = span.get_text(strip=True)
+                        if "m²" in span_text and any(char.isdigit() for char in span_text):
+                            area = self.extract_area(span_text)
+                            if area > 0:
+                                break
+                
                 if isinstance(detail_config, dict) and "area" in detail_config:
                     # complex details extraction (for nieruchomosci)
-                    if "area" in detail_config:
+                    if "area" in detail_config and area == 0: 
                         area_selector = detail_config["area"]
                         area_text = self.safe_extract(listing, [area_selector])
                         area = self.extract_area(area_text)

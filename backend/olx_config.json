@@ -1,0 +1,74 @@
+{
+    "name": "OLX.pl",
+    "site_name": "olx", 
+    "base_domain": "https://www.olx.pl",
+    "base_url": "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/{city}/?search[order]=filter_float_price:asc&view=grid&page=1",
+    "page_url": "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/{city}/?search[order]=filter_float_price:asc&view=grid&page={page}",
+    "default_pages": 10,
+    "delay_between_pages": 3,
+    
+    "selectors": {
+        "wait_element": {
+            "type": "css",
+            "value": "[data-cy='l-card']"
+        },
+        
+        "pagination": {
+            "tag": "li",
+            "class": "",
+            "item_tag": "a",
+            "data_testid": "pagination-list-item"
+        },
+        
+        "listings_container": {
+            "tag": "div",
+            "class": "",
+            "data_testid": "listing-grid"
+        },
+        
+        "listing_item": {
+            "tag": "div",
+            "class": "",
+            "data_testid": "",
+            "data_cy": "l-card"
+        },
+        
+        "link": {
+            "tag": "a",
+            "class": "",
+            "nested": false
+        },
+        
+        "title": [
+            ["h4", ""],
+            ["h3", ""],
+            ["h6", ""]
+        ],
+        
+        "image": {
+            "tag": "img",
+            "class": "css-8wsg1m",
+            "attribute": "srcset",
+            "transform": "best_quality"
+        },
+        
+        "address": [
+            ["div", "css-odp1qd", "p", "0"],
+            ["p", "css-odp1qd"],
+            ["div", "css-odp1qd"]
+        ],
+        
+        "price": [
+            ["p", "css-1j3chf6"],
+            ["span", "", "zl_search"],
+            ["p", "css-10b0gli"]
+        ],
+        
+        "details": {
+            "area": [
+                ["span", "", "m2_search"],
+                ["div", "css-odp1qd", "p", "1"]
+            ]
+        }
+    }
+}
