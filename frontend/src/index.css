@@ -1,22 +1,24 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: 'Inter';
-  src: url('/Inter-VariableFont_opsz,wght.ttf') format('truetype');
+  font-family: 'OpenSans';
+  src: url('/OpenSans-VariableFont_wdth,wght.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 
-
-
 html {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(107, 114, 128, 0.6) transparent;
-    background-color:  #030712;
-    color:white;
-    font-family: "Inter", system-ui;
+  scrollbar-width: thin;
 
-    scrollbar-gutter: stable;
+  /* background-color: #030712; */
+  color: white;
+  font-family: "OpenSans", system-ui;
+  scrollbar-gutter: stable;
+}
+
+/* Ensure proper dark mode support */
+.system {
+  color-scheme: light dark;
 }
 

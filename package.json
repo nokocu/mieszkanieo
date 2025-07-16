@@ -1,7 +1,7 @@
 {
   "name": "mieszkanieo",
   "version": "1.0.0",
-  "description": "Real Estate Property Scraper and API - Python FastAPI backend with React frontend",
+  "description": "mieszkanieo",
   "main": "index.js",
   "scripts": {
     "frontend": "cd frontend && npm run dev",
