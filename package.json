@@ -1,53 +1,26 @@
 {
   "name": "mieszkanieo",
-  "private": true,
-  "version": "3.0.0",
-  "description": "mieszkanieo",
-  "type": "module",
+  "version": "1.0.0",
+  "description": "Real Estate Property Scraper and API - Python FastAPI backend with React frontend",
+  "main": "index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,scss}\"",
-    "test": "vitest",
-    "frontend": "vite",
-    "backend": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
-    "docker:start": "docker-compose up -d",
-    "docker:stop": "docker-compose down",
-    "docker:build": "docker-compose build",
-    "docker:dev": "docker-compose up",
-    "docker:logs": "docker-compose logs -f",
-    "docker:clean": "docker-compose down -v",
-    "test:scraping": "python test_scraping.py",
-    "test:mock": "curl -X GET http://localhost:8000/api/test/mock-data",
-    "test:health": "curl -X GET http://localhost:8000/api/health"
+    "frontend": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "backend": "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000",
+    "backend:dev": "cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
   },
-  "dependencies": {
-    "@tanstack/react-query": "^5.12.2",
-    "axios": "^1.6.2",
-    "bootstrap": "^5.3.2",
-    "bootstrap-icons": "^1.13.1",
-    "clsx": "^2.0.0",
-    "lucide-react": "^0.294.0",
-    "react": "^18.2.0",
-    "react-bootstrap": "^2.10.10",
-    "react-dom": "^18.2.0",
-    "react-hook-form": "^7.48.2",
-    "react-router-dom": "^6.20.1"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nokocu/mieszkanieo.git"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nokocu/mieszkanieo/issues"
+  },
+  "homepage": "https://github.com/nokocu/mieszkanieo#readme",
   "devDependencies": {
-    "@types/react": "^18.2.37",
-    "@types/react-dom": "^18.2.15",
-    "@typescript-eslint/eslint-plugin": "^6.10.0",
-    "@typescript-eslint/parser": "^6.10.0",
-    "@vitejs/plugin-react": "^4.1.1",
-    "eslint": "^8.53.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.4",
-    "prettier": "^3.1.0",
-    "typescript": "^5.2.2",
-    "vite": "^5.0.0",
-    "vitest": "^1.0.0"
+    "concurrently": "^8.2.2"
   }
 }

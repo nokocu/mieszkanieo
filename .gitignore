@@ -44,7 +44,6 @@ coverage/
 .nyc_output/
 
 # Backup folders
-misc/
 delta-old/
 
 # Python specific
@@ -57,3 +56,7 @@ pip-delete-this-directory.txt
 
 # TypeScript
 *.tsbuildinfo
+
+#nkc
+misc/
+referencer/

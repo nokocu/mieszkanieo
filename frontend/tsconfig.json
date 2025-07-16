@@ -17,14 +17,14 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/components/*": ["./src/components/*"],
-      "@/types/*": ["./src/types/*"],
-      "@/utils/*": ["./src/utils/*"],
-      "@/hooks/*": ["./src/hooks/*"],
-      "@/services/*": ["./src/services/*"]
+      "@/*": ["frontend/src/*"],
+      "@/components/*": ["frontend/src/components/*"],
+      "@/types/*": ["frontend/src/types/*"],
+      "@/utils/*": ["frontend/src/utils/*"],
+      "@/hooks/*": ["frontend/src/hooks/*"],
+      "@/services/*": ["frontend/src/services/*"]
     }
   },
-  "include": ["src"],
+  "include": ["frontend/src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

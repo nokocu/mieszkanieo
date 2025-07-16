@@ -53,9 +53,9 @@ const Home: React.FC = () => {
 
   if (loading && properties.length === 0) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="" style={{ minHeight: '100vh' }}>
+        <div className="" role="status">
+          <span className="">Loading...</span>
         </div>
       </div>
     )
@@ -74,35 +74,35 @@ const Home: React.FC = () => {
       />
 
       <main>
-        <section className="py-3"></section>
+        <section className=""></section>
         {/* Add extra spacing when navbar is expanded */}
-        {(isFilterExpanded || isRefreshExpanded) && <section className="py-4"></section>}
+        {(isFilterExpanded || isRefreshExpanded) && <section className=""></section>}
 
-        <div className="album py-5 bg-body-tertiary">
-          <div className="container">
+        <div className="">
+          <div className="">
             {error && (
-              <div className="alert alert-danger" role="alert">
+              <div className="" role="alert">
                 {error}
               </div>
             )}
             
             {loading && (
-              <div className="d-flex justify-content-center">
-                <div className="spinner-border text-primary" role="status">
+              <div className="">
+                <div className="" role="status">
                   <span className="visually-hidden">Loading...</span>
                 </div>
               </div>
             )}
 
-            <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+            <div className="">
               {properties.map((property) => (
                 <PropertyCard key={property.id} property={property} />
               ))}
             </div>
 
             {!loading && properties.length === 0 && !error && (
-              <div className="text-center py-5">
-                <p className="text-muted">No properties found for the selected filters.</p>
+              <div className="">
+                <p className="">No properties found for the selected filters.</p>
               </div>
             )}
           </div>
