@@ -7,6 +7,8 @@ import json
 import requests
 import hashlib
 import uuid
+import csv
+import os
 from bs4 import BeautifulSoup
 from unidecode import unidecode
 import undetected_chromedriver as uc
@@ -23,6 +25,37 @@ class PropertyScraper:
         self.headless = headless
         self.api_url = api_url
         self.driver = None
+        self.location_mapping = {}
+    
+    def load_location_mapping(self, csv_file_path):
+        """Load location mapping from CSV file"""
+        if not os.path.exists(csv_file_path):
+            print(f"CSV file not found: {csv_file_path}")
+            return
+            
+        self.location_mapping = {}
+        try:
+            with open(csv_file_path, 'r', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    city = row['miasto'].strip().lower()
+                    path = row['link'].strip()
+                    self.location_mapping[city] = path
+            print(f"Loaded {len(self.location_mapping)} location mappings")
+        except Exception as e:
+            print(f"Error loading location mapping: {e}")
+    
+    def get_city_url_path(self, city, config):
+        """Get URL path for city from CSV mapping"""
+        if not config.get("use_csv_location"):
+            return unidecode(city).lower()
+            
+        city_key = unidecode(city).lower()
+        if city_key in self.location_mapping:
+            return self.location_mapping[city_key]
+        
+        print(f"City '{city}' not found in location mapping")
+        return None
     
     def setup_browser(self):
         """Start chrome browser"""
@@ -144,6 +177,10 @@ class PropertyScraper:
         if listing_config.get("data_cy"):
             return container.find_all(listing_config["tag"], attrs={"data-cy": listing_config["data_cy"]})
         
+        # for otodom-style direct children (li directly under ul)
+        if listing_config["tag"] == "li" and not listing_config.get("class"):
+            return container.find_all("li", recursive=False)
+        
         # use flexible class matching if configured
         if rules.get("listing_selector_strategy") == "flexible_class_matching":
             patterns = rules.get("flexible_class_patterns", [])
@@ -196,7 +233,19 @@ class PropertyScraper:
         if not config.get("has_pagination", True):
             return config.get("default_pages", 50), None
             
-        url = config["base_url"].format(city=unidecode(city).lower())
+        # handle CSV-based location mapping
+        if config.get("use_csv_location"):
+            if config.get("csv_file"):
+                csv_path = os.path.join(os.path.dirname(__file__), config["csv_file"])
+                self.load_location_mapping(csv_path)
+            
+            city_path = self.get_city_url_path(city, config)
+            if city_path is None:
+                return config.get("default_pages", 50), None
+            
+            url = config["base_url"].format(city_path=city_path)
+        else:
+            url = config["base_url"].format(city=unidecode(city).lower())
         
         self.driver.get(url)
         wait_config = config["selectors"]["wait_element"]
@@ -209,11 +258,20 @@ class PropertyScraper:
         
         # find pagination
         pag_config = config["selectors"]["pagination"]
+        
+        # handle otodom-specific pagination
+        if "last_page_selector" in pag_config:
+            last_page_elem = soup.select_one(pag_config["last_page_selector"])
+            if last_page_elem:
+                text = last_page_elem.get_text(strip=True)
+                if text.isdigit():
+                    return int(text), soup
+        
+        # standard pagination handling
         if pag_config.get("data_testid"):
             pages = soup.find_all(pag_config["tag"], attrs={"data-testid": pag_config["data_testid"]})
         else:
-            container = soup.find(pag_config["tag"], class_=pag_config["class"])
-            pages = container.find_all(pag_config["item_tag"]) if container else []
+            pages = soup.find_all(pag_config["tag"], class_=pag_config["class"])
         
         max_page = 0
         for page in pages:
@@ -231,7 +289,20 @@ class PropertyScraper:
     def scrape_page(self, city, page_num, config, preloaded_soup=None):
         """Scrape one page of listings"""
         if preloaded_soup is None:
-            url = config["page_url"].format(city=unidecode(city).lower(), page=page_num)
+            # handle CSV-based location mapping
+            if config.get("use_csv_location"):
+                if config.get("csv_file"):
+                    csv_path = os.path.join(os.path.dirname(__file__), config["csv_file"])
+                    self.load_location_mapping(csv_path)
+                
+                city_path = self.get_city_url_path(city, config)
+                if city_path is None:
+                    return []
+                
+                url = config["page_url"].format(city_path=city_path, page=page_num)
+            else:
+                url = config["page_url"].format(city=unidecode(city).lower(), page=page_num)
+            
             print(f"scrape_page: scraping page {page_num}: {url}")
             
             self.driver.get(url)
@@ -307,13 +378,27 @@ class PropertyScraper:
         elif not link.startswith("http"):
             link = config["base_domain"] + "/" + link
         
-        # get title
-        title = self.find_in_element(listing, selectors["title"])
+        # get title - handle data attributes
+        title = ""
+        title_config = selectors["title"]
+        if isinstance(title_config, dict) and title_config.get("data_cy"):
+            title_elem = listing.find(title_config["tag"], attrs={"data-cy": title_config["data_cy"]})
+            title = title_elem.get_text(strip=True) if title_elem else ""
+        else:
+            title = self.find_in_element(listing, selectors["title"])
+        
         if not title:
             return None
         
-        # get address
-        address = self.find_in_element(listing, selectors["address"])
+        # get address - handle data attributes
+        address = ""
+        address_config = selectors["address"]
+        if isinstance(address_config, dict) and address_config.get("data_sentry_component"):
+            address_elem = listing.find(address_config["tag"], attrs={"data-sentry-component": address_config["data_sentry_component"]})
+            address = address_elem.get_text(strip=True) if address_elem else ""
+        else:
+            address = self.find_in_element(listing, selectors["address"])
+        
         if not address:
             address = city.title()
         
@@ -322,19 +407,29 @@ class PropertyScraper:
         if "address_cleanup" in rules:
             address = self.apply_processing_rules(address, rules["address_cleanup"])
         
-        # get price
-        price_text = self.find_with_fallback(
-            listing, 
-            selectors["price"], 
-            rules.get("price_fallback")
-        )
+        # get price - handle data attributes
+        price_text = ""
+        price_config = selectors["price"]
+        if isinstance(price_config, dict) and price_config.get("data_sentry_element"):
+            price_elem = listing.find(price_config["tag"], attrs={"data-sentry-element": price_config["data_sentry_element"]})
+            price_text = price_elem.get_text(strip=True) if price_elem else ""
+        else:
+            price_text = self.find_with_fallback(
+                listing, 
+                selectors["price"], 
+                rules.get("price_fallback")
+            )
+        
         price = self.extract_number(price_text)
         
-        # get image
+        # get image - handle data attributes
         image = ""
         if "image" in selectors:
             img_config = selectors["image"]
-            if img_config.get("nested"):
+            if img_config.get("data_cy"):
+                img_elem = listing.find(img_config["tag"], attrs={"data-cy": img_config["data_cy"]})
+                image = img_elem.get(img_config["attribute"], "") if img_elem else ""
+            elif img_config.get("nested"):
                 picture = listing.find(img_config["tag"], class_=img_config["class"])
                 if picture:
                     source = picture.find(img_config["nested"]["tag"])
@@ -343,7 +438,7 @@ class PropertyScraper:
             else:
                 image = self.find_attribute(listing, img_config["tag"], img_config["class"], img_config["attribute"])
         
-        # get area and rooms
+        # get area, rooms, level
         area = 0
         rooms = None
         level = None
@@ -351,7 +446,23 @@ class PropertyScraper:
         if "details" in selectors:
             details_config = selectors["details"]
             
-            if isinstance(details_config, dict) and "area" in details_config:
+            # handle otodom-style indexed dd elements
+            if rules.get("otodom_details_extraction"):
+                dd_elements = listing.find_all("dd", class_="css-17je0kd")
+                if len(dd_elements) >= 3:
+                    # rooms is first dd
+                    rooms_text = dd_elements[0].get_text(strip=True)
+                    rooms = self.extract_number(rooms_text)
+                    
+                    # area is second dd
+                    area_text = dd_elements[1].get_text(strip=True)
+                    area = self.extract_number(area_text)
+                    
+                    # level is third dd
+                    level_text = dd_elements[2].get_text(strip=True)
+                    level = self.extract_number(level_text)
+            
+            elif isinstance(details_config, dict) and "area" in details_config:
                 # complex details like olx and nieruchomosci
                 area_text = self.find_with_fallback(
                     listing, 

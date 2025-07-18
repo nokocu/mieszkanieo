@@ -1,0 +1,82 @@
+{
+    "name": "Otodom.pl",
+    "site_name": "otodom",
+    "base_domain": "https://www.otodom.pl",
+    "base_url": "https://www.otodom.pl/pl/wyniki/wynajem/mieszkanie{city_path}?by=PRICE&direction=ASC&limit=72",
+    "page_url": "https://www.otodom.pl/pl/wyniki/wynajem/mieszkanie{city_path}?by=PRICE&direction=ASC&limit=72&page={page}",
+    "default_pages": 50,
+    "delay_between_pages": 2,
+    "has_pagination": true,
+    "use_csv_location": true,
+    "csv_file": "cfg/otodom.csv",
+    
+    "processing_rules": {
+        "otodom_details_extraction": true
+    },
+    
+    "selectors": {
+        "wait_element": {
+            "type": "css",
+            "value": "ul.css-j23hvs"
+        },
+        
+        "pagination": {
+            "tag": "li",
+            "class": "css-43nhzf",
+            "last_page_selector": "li.css-43nhzf:last-child"
+        },
+        
+        "listings_container": {
+            "tag": "ul",
+            "class": "css-j23hvs"
+        },
+        
+        "listing_item": {
+            "tag": "li"
+        },
+        
+        "link": {
+            "tag": "a",
+            "attribute": "href"
+        },
+        
+        "title": {
+            "tag": "p",
+            "data_cy": "listing-item-title"
+        },
+        
+        "address": {
+            "tag": "p",
+            "data_sentry_component": "Address"
+        },
+        
+        "price": {
+            "tag": "span",
+            "data_sentry_element": "MainPrice"
+        },
+        
+        "image": {
+            "tag": "img",
+            "data_cy": "listing-item-image-source",
+            "attribute": "src"
+        },
+        
+        "details": {
+            "rooms": {
+                "tag": "dd",
+                "class": "css-17je0kd",
+                "index": 0
+            },
+            "area": {
+                "tag": "dd", 
+                "class": "css-17je0kd",
+                "index": 1
+            },
+            "level": {
+                "tag": "dd",
+                "class": "css-17je0kd", 
+                "index": 2
+            }
+        }
+    }
+}
