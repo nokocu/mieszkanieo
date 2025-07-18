@@ -63,8 +63,13 @@ class PropertyScraper:
             return
         
         self.driver = uc.Chrome(use_subprocess=False, headless=self.headless)
+        self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        self.driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+            "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        })
         self.driver.get('chrome://settings/')
         self.driver.execute_script('chrome.settingsPrivate.setDefaultZoom(0.25);')
+        time.sleep(0.5)
     
     def wait_for_page(self, selector, selector_type="css", timeout=10):
         """Wait for page to load"""
@@ -706,7 +711,7 @@ def main():
         with open(config_file, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
-        scraper = PropertyScraper(headless=False)
+        scraper = PropertyScraper(headless=True)
         result = scraper.scrape_site(city, config, max_pages)
         
         if result["success"]:
