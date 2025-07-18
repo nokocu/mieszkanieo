@@ -6,6 +6,30 @@
     "page_url": "https://nieruchomosci-online.pl/szukaj.html?3,mieszkanie,wynajem,,{city}&o=price,asc&p={page}",
     "default_pages": 50,
     "delay_between_pages": 2,
+    "has_pagination": false,
+    
+    "processing_rules": {
+        "listing_selector_strategy": "flexible_class_matching",
+        "flexible_class_patterns": ["tile-tile"],
+        "price_fallback": {
+            "selector": ["p", "title-a primary-display font-bold header-sm"],
+            "nested": ["span"]
+        },
+        "area_fallback": {
+            "selector": ["span", "area"]
+        },
+        "details_extraction": {
+            "rooms": {
+                "search_text": "Liczba pokoi:",
+                "extract_from": "strong"
+            },
+            "level": {
+                "search_text": "Piętro:",
+                "extract_from": "strong",
+                "special_values": {"parter": 0}
+            }
+        }
+    },
     
     "selectors": {
         "wait_element": {
@@ -14,9 +38,6 @@
         },
         
         "pagination": {
-            "tag": "div",
-            "class": "no-pagination",
-            "item_tag": "span"
         },
         
         "listings_container": {
@@ -26,7 +47,7 @@
         
         "listing_item": {
             "tag": "div",
-            "class": "tile-tile"
+            "class": "tile tile-tile"
         },
         
         "link": {
@@ -54,14 +75,14 @@
         
         "price": [
             ["span", ""],
-            ["div", "price"],
-            ["span", "price"]
+            ["p", "title-a primary-display font-bold header-sm"],
+            ["div", "price"]
         ],
         
         "details": {
             "area": ["span", "area"],
-            "level": ["div", ""],
-            "rooms": ["div", ""]
+            "rooms": ["div", "attributes__box--item"],
+            "level": ["div", "attributes__box--item"]
         }
     }
 }

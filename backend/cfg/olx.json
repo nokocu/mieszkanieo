@@ -6,6 +6,16 @@
     "page_url": "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/{city}/?search[order]=filter_float_price:asc&view=grid&page={page}",
     "default_pages": 10,
     "delay_between_pages": 3,
+    "has_pagination": true,
+    
+    "processing_rules": {
+        "address_cleanup": [
+            {"type": "regex", "pattern": "\\s*-\\s*(Odświeżono\\s+)?(dnia\\s+)?\\d{1,2}\\s+(stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|października|listopada|grudnia)\\s+\\d{4}.*$", "replacement": ""},
+            {"type": "regex", "pattern": "\\s*-\\s*Dzisiaj\\s+o\\s+\\d{1,2}:.*$", "replacement": ""},
+            {"type": "regex", "pattern": "\\s*\\d+(?:[,\\.]\\d+)?\\s*m².*$", "replacement": ""},
+            {"type": "strip", "chars": " -"}
+        ]
+    },
     
     "selectors": {
         "wait_element": {
@@ -47,15 +57,14 @@
         
         "image": {
             "tag": "img",
-            "class": "css-8wsg1m",
-            "attribute": "srcset",
-            "transform": "best_quality"
+            "class": "",
+            "attribute": "src"
         },
         
         "address": [
-            ["div", "css-odp1qd", "p", "0"],
             ["p", "css-odp1qd"],
-            ["div", "css-odp1qd"]
+            ["div", "css-odp1qd"],
+            ["span", "location"]
         ],
         
         "price": [
@@ -66,6 +75,7 @@
         
         "details": {
             "area": [
+                ["span", "css-6as4g5"],
                 ["span", "", "m2_search"],
                 ["div", "css-odp1qd", "p", "1"]
             ]
