@@ -111,26 +111,24 @@ class PropertyScraper:
             
             for field, field_config in details_rules.items():
                 if "search_text" in field_config:
-                    # find elements containing the search text
-                    all_elements = listing.find_all()
-                    for element in all_elements:
-                        if field_config["search_text"] in element.get_text():
-                            # extract from specified nested element
+                    # find the specific element that directly contains the search text
+                    search_text = field_config["search_text"]
+                    
+                    # look for p tags that contain the search text
+                    p_elements = listing.find_all("p")
+                    for p_element in p_elements:
+                        p_text = p_element.get_text()
+                        if search_text in p_text:
+                            # extract from specified nested element within this specific p tag
                             if "extract_from" in field_config:
-                                nested = element.find_all(field_config["extract_from"])
+                                nested = p_element.find_all(field_config["extract_from"])
                                 if nested:
-                                    value_text = nested[0].get_text()
+                                    # get all strong tags and combine their text for this specific field
+                                    value_parts = [strong.get_text().strip() for strong in nested]
+                                    value_text = "".join(value_parts)
                                     
-                                    # handle special values
-                                    if "special_values" in field_config:
-                                        for special, replacement in field_config["special_values"].items():
-                                            if special in value_text.lower():
-                                                results[field] = replacement
-                                                break
-                                        else:
-                                            results[field] = self.extract_number(value_text)
-                                    else:
-                                        results[field] = self.extract_number(value_text)
+                                    # apply extract_number which handles "parter" case and floor format
+                                    results[field] = self.extract_number(value_text)
                                     break
             
             return results
@@ -171,8 +169,16 @@ class PropertyScraper:
         if not text:
             return 0
         
+        # handle special case for floor: if contains "parter", return 0
+        if "parter" in text.lower():
+            return 0
+        
         # clean text
         clean = text.replace("zł", "").replace("m²", "").replace(" ", "")
+        
+        # handle floor format like "11/13" - take the first number (actual floor)
+        if "/" in clean:
+            clean = clean.split("/")[0]
         
         # get integer part only
         if "," in clean:

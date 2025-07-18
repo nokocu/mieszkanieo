@@ -25,8 +25,7 @@
             },
             "level": {
                 "search_text": "Piętro:",
-                "extract_from": "strong",
-                "special_values": {"parter": 0}
+                "extract_from": "strong"
             }
         }
     },
