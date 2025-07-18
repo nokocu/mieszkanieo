@@ -9,6 +9,7 @@ export interface Property {
   image: string;
   link: string;
   site: PropertySite;
+  city?: string;
   createdAt: Date;
   updatedAt: Date;
 }

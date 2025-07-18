@@ -491,6 +491,7 @@ class PropertyScraper:
             "rooms": rooms,
             "level": level,
             "address": address,
+            "city": city.title(),
             "site": config["site_name"],
             "link": link,
             "image": image
@@ -675,7 +676,7 @@ def main():
         with open(config_file, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
-        scraper = PropertyScraper(headless=False)
+        scraper = PropertyScraper(headless=True)
         result = scraper.scrape_site(city, config, max_pages)
         
         if result["success"]:

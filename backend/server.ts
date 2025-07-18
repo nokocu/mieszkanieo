@@ -49,6 +49,7 @@ function createTables() {
       image TEXT,
       link TEXT NOT NULL UNIQUE,
       site TEXT NOT NULL,
+      city TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -127,7 +128,8 @@ app.post('/api/properties', [
   body('address').isString().trim().isLength({ min: 1, max: 1000 }),
   body('site').isString().trim().isIn(['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom']),
   body('link').isURL().isLength({ max: 1000 }),
-  body('image').optional().isString().trim().isLength({ max: 1000 })
+  body('image').optional().isString().trim().isLength({ max: 1000 }),
+  body('city').optional().isString().trim().isLength({ min: 1, max: 100 })
 ], (req: Request, res: Response) => {
   // Check validation results
   const errors = validationResult(req);
@@ -139,14 +141,14 @@ app.post('/api/properties', [
     return;
   }
 
-  const { id, title, price, area, rooms, level, address, site, link, image } = req.body;
+  const { id, title, price, area, rooms, level, address, site, link, image, city } = req.body;
   
   const query = `
-    INSERT INTO properties (id, title, price, area, rooms, level, address, site, link, image, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    INSERT INTO properties (id, title, price, area, rooms, level, address, site, link, image, city, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `;
   
-  db.run(query, [id, title, price, area, rooms, level, address, site, link, image], function(err) {
+  db.run(query, [id, title, price, area, rooms, level, address, site, link, image, city], function(err) {
     if (err) {
       if (err.message.includes('UNIQUE constraint failed')) {
         res.status(409).json({ error: 'Property with this link already exists' });
@@ -179,7 +181,8 @@ app.post('/api/properties/batch', [
   body('properties.*.address').isString().trim().isLength({ min: 1, max: 1000 }),
   body('properties.*.site').isString().trim().isIn(['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom']),
   body('properties.*.link').isURL().isLength({ max: 1000 }),
-  body('properties.*.image').optional().isString().trim().isLength({ max: 1000 })
+  body('properties.*.image').optional().isString().trim().isLength({ max: 1000 }),
+  body('properties.*.city').optional().isString().trim().isLength({ min: 1, max: 100 })
 ], (req: Request, res: Response) => {
   // check validation results
   const errors = validationResult(req);
@@ -197,8 +200,8 @@ app.post('/api/properties/batch', [
   let errors_count = 0;
   
   const query = `
-    INSERT OR IGNORE INTO properties (id, title, price, area, rooms, level, address, site, link, image, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    INSERT OR IGNORE INTO properties (id, title, price, area, rooms, level, address, site, link, image, city, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `;
   
   // use a transaction (for better performance?)
@@ -208,9 +211,9 @@ app.post('/api/properties/batch', [
     const stmt = db.prepare(query);
     
     properties.forEach((property: any) => {
-      const { id, title, price, area, rooms, level, address, site, link, image } = property;
+      const { id, title, price, area, rooms, level, address, site, link, image, city } = property;
       
-      stmt.run([id, title, price, area, rooms, level, address, site, link, image], function(err) {
+      stmt.run([id, title, price, area, rooms, level, address, site, link, image, city], function(err) {
         if (err) {
           errors_count++;
           console.error('Error inserting property:', err.message);
@@ -263,6 +266,23 @@ app.delete('/api/properties/:id', (req, res) => {
     }
     
     res.json({ message: 'Property deleted successfully' });
+  });
+});
+
+// delete properties by city
+app.delete('/api/properties/city/:city', (req, res) => {
+  const { city } = req.params;
+  
+  db.run('DELETE FROM properties WHERE city = ?', [city], function(err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    res.json({ 
+      message: `Deleted ${this.changes} properties from ${city}`,
+      deletedCount: this.changes
+    });
   });
 });
 
