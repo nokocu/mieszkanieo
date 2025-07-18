@@ -497,6 +497,28 @@ class PropertyScraper:
             "image": image
         }
     
+    def delete_city_properties(self, city):
+        """Delete all properties for a specific city"""
+        try:
+            response = requests.delete(
+                f"{self.api_url}/api/properties/city/{city}",
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                deleted_count = result.get('deletedCount', 0)
+                print(f"delete_city_properties: deleted {deleted_count} properties from {city}")
+                return deleted_count
+            else:
+                print(f"delete_city_properties: api error {response.status_code}: {response.text}")
+                return 0
+                
+        except Exception as e:
+            print(f"delete_city_properties: delete error: {e}")
+            return 0
+
     def save_properties_batch(self, properties):
         """Save multiple properties to api in a single request"""
         if not properties:
@@ -592,6 +614,7 @@ class PropertyScraper:
             all_properties = []
             saved_count = 0
             empty_pages_count = 0
+            city_data_deleted = False
             
             for page in range(1, total_pages + 1):
                 progress = int((page - 1) / total_pages * 100)
@@ -619,6 +642,13 @@ class PropertyScraper:
                     empty_pages_count = 0  # reset counter when we find properties
                 
                 all_properties.extend(properties)
+                
+                # delete existing city data
+                if properties and not city_data_deleted:
+                    print(f"scrape_site: deleting existing properties for {city} before adding new data")
+                    deleted_count = self.delete_city_properties(city.title())
+                    print(f"scrape_site: deleted {deleted_count} existing properties for {city}")
+                    city_data_deleted = True
                 
                 # save properties in batch
                 if properties:
@@ -676,7 +706,7 @@ def main():
         with open(config_file, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
-        scraper = PropertyScraper(headless=True)
+        scraper = PropertyScraper(headless=False)
         result = scraper.scrape_site(city, config, max_pages)
         
         if result["success"]:
