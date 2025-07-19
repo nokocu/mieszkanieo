@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Property, PropertyFilters } from '../../types'
 import { propertyService } from '../../lib/propertyService'
 import { Button } from "../../components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 import { Input } from "../../components/ui/input"
 import { Badge } from "../../components/ui/badge"
 import { Separator } from "../../components/ui/separator"
@@ -107,10 +107,81 @@ const PropertiesShadcnRoute: React.FC = () => {
     return colors[site] || 'bg-muted text-muted-foreground border-border'
   }
 
+  // skeleton component for loading state
+  const PropertySkeleton = () => (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-80 p-0">
+      {/* Image skeleton */}
+      <div className="h-[70%] relative bg-muted overflow-hidden animate-pulse">
+        <div className="w-full h-full bg-neutral-300 dark:bg-neutral-700"></div>
+        {/* Site badge skeleton */}
+        <div className="absolute bottom-2 left-2 w-16 h-4 bg-neutral-400 dark:bg-neutral-600 rounded animate-pulse"></div>
+      </div>
+      
+      {/* Content skeleton */}
+      <div className="pl-4 pr-4 pb-4 flex flex-col">
+        <div className="flex-1 min-h-0">
+          {/* Title skeleton */}
+          <div className="space-y-2 mb-1">
+            <div className="h-4 bg-neutral-300 dark:bg-neutral-700 rounded mb-1 animate-pulse"></div>
+            <div className="h-4 bg-neutral-300 dark:bg-neutral-700 rounded w-3/4 animate-pulse"></div>
+          </div>
+          {/* Address skeleton */}
+          <div className="flex items-center mb-2">
+            <div className="h-3 w-3 bg-neutral-300 dark:bg-neutral-700 rounded mr-1 animate-pulse"></div>
+            <div className="h-3 bg-neutral-300 dark:bg-neutral-700 rounded w-2/3 animate-pulse"></div>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          {/* Price skeleton */}
+          <div className="h-5 bg-neutral-300 dark:bg-neutral-700 rounded w-24 animate-pulse"></div>
+          {/* Details skeleton */}
+          <div className="flex items-center gap-2">
+            <div className="h-4 bg-neutral-300 dark:bg-neutral-700 rounded w-12 animate-pulse"></div>
+            <div className="h-4 bg-neutral-300 dark:bg-neutral-700 rounded w-8 animate-pulse"></div>
+            <div className="h-4 bg-neutral-300 dark:bg-neutral-700 rounded w-8 animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Mieszkanieo</h1>
+            <p className="text-muted-foreground">
+              Ładowanie ogłoszeń...
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={toggleDarkMode}
+            >
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              {showFilters ? 'Ukryj Filtry' : 'Filtruj'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Skeleton Properties Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {Array.from({ length: 12 }).map((_, index) => (
+            <PropertySkeleton key={index} />
+          ))}
+        </div>
       </div>
     )
   }
@@ -256,15 +327,15 @@ const PropertiesShadcnRoute: React.FC = () => {
       )}
 
       {/* Properties Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-0">
         {properties.map((property) => (
           <Card 
             key={property.id} 
             className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-80 p-0"
             onClick={() => window.open(property.link, '_blank')}
           >
-            {/* Image Section - 70% height */}
-            <div className="h-[60%] relative bg-muted">
+            {/* Image Section */}
+            <div className="h-[70%] relative bg-muted overflow-hidden">
               {property.image ? (
                 <img
                   src={property.image}
@@ -284,19 +355,24 @@ const PropertiesShadcnRoute: React.FC = () => {
               </Badge>
             </div>
             
-            {/* Content Section - 30% height */}
-            <div className="h-[30%] p-4 pt-0 pb-0 flex flex-col">
-              <div className="flex-1 min-h-0">
+            {/* Content Section */}
+            <div className="pl-4 pr-4 pb-4 flex flex-col">
+              {/* Title and Location */}
+              <div>
                 <h3 className="text-sm font-semibold leading-tight line-clamp-2 mb-1">
                   {property.title}
                 </h3>
-                <div className="flex items-center text-muted-foreground text-xs">
+                <div className="flex items-center text-muted-foreground text-xs mb-2">
                   <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
                   <span className="truncate">{property.address}</span>
                 </div>
               </div>
               
-              <div className="flex items-center justify-between mt-auto">
+              {/* Spacer to push details to bottom */}
+              <div className="flex-1"></div>
+              
+              {/* Price and Details */}
+              <div className="flex items-center justify-between">
                 <div className="text-lg font-bold text-foreground">
                   {property.price.toLocaleString()} zł
                 </div>
