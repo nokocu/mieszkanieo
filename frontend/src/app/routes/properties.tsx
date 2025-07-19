@@ -2,19 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { Property, PropertyFilters } from '../../types'
 import { propertyService } from '../../lib/propertyService'
 import { Button } from "../../components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Input } from "../../components/ui/input"
+import { Card, CardContent } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
-import { Separator } from "../../components/ui/separator"
-import { Checkbox } from "../../components/ui/checkbox"
-import { Slider } from "../../components/ui/slider"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
-import { MapPin, Building, DoorClosed, Ruler, Filter, X, Moon, Sun, ArrowBigUp } from 'lucide-react'
+import { MapPin, Building, DoorClosed, Ruler, Moon, Sun, ArrowBigUp } from 'lucide-react'
 
 const PropertiesShadcnRoute: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
-  const [showFilters, setShowFilters] = useState(false)
   const [darkMode, setDarkMode] = useState(() => {
     // Check system preference on initialization
     if (typeof window !== 'undefined') {
@@ -22,29 +16,62 @@ const PropertiesShadcnRoute: React.FC = () => {
     }
     return false
   })
-  const [filters, setFilters] = useState<PropertyFilters>({
-    sites: ['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'],
-    sortBy: 'price_asc'
+  
+  // get filters from sidebar (localStorage + event listener)
+  const [filters, setFilters] = useState<PropertyFilters>(() => {
+    const stored = localStorage.getItem('propertyFilters')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        return {
+          sites: parsed.sites || ['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'],
+          sortBy: parsed.sortBy || 'price_asc',
+          address: parsed.address || '',
+          priceMin: parsed.priceRange?.[0] > 0 ? parsed.priceRange[0] : undefined,
+          priceMax: parsed.priceRange?.[1] < 10000 ? parsed.priceRange[1] : undefined,
+          areaMin: parsed.areaRange?.[0] > 0 ? parsed.areaRange[0] : undefined,
+          areaMax: parsed.areaRange?.[1] < 200 ? parsed.areaRange[1] : undefined,
+          roomsMin: parsed.roomsRange?.[0] > 1 ? parsed.roomsRange[0] : undefined,
+          roomsMax: parsed.roomsRange?.[1] < 6 ? parsed.roomsRange[1] : undefined,
+        }
+      } catch {
+        return {
+          sites: ['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'],
+          sortBy: 'price_asc'
+        }
+      }
+    }
+    return {
+      sites: ['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'],
+      sortBy: 'price_asc'
+    }
   })
 
-  // Price range state
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
-  const [areaRange, setAreaRange] = useState<[number, number]>([0, 200])
-  const [roomsRange, setRoomsRange] = useState<[number, number]>([1, 6])
+  // listen for filter changes from sidebar
+  React.useEffect(() => {
+    const handleFiltersChanged = (event: CustomEvent) => {
+      const sidebarFilters = event.detail
+      setFilters({
+        sites: sidebarFilters.sites || ['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'],
+        sortBy: sidebarFilters.sortBy || 'price_asc',
+        address: sidebarFilters.address || '',
+        priceMin: sidebarFilters.priceRange?.[0] > 0 ? sidebarFilters.priceRange[0] : undefined,
+        priceMax: sidebarFilters.priceRange?.[1] < 10000 ? sidebarFilters.priceRange[1] : undefined,
+        areaMin: sidebarFilters.areaRange?.[0] > 0 ? sidebarFilters.areaRange[0] : undefined,
+        areaMax: sidebarFilters.areaRange?.[1] < 200 ? sidebarFilters.areaRange[1] : undefined,
+        roomsMin: sidebarFilters.roomsRange?.[0] > 1 ? sidebarFilters.roomsRange[0] : undefined,
+        roomsMax: sidebarFilters.roomsRange?.[1] < 6 ? sidebarFilters.roomsRange[1] : undefined,
+      })
+    }
+
+    window.addEventListener('filtersChanged', handleFiltersChanged as EventListener)
+    return () => window.removeEventListener('filtersChanged', handleFiltersChanged as EventListener)
+  }, [])
 
   const fetchProperties = async () => {
     try {
       setLoading(true)
-      const filtersWithRanges = {
-        ...filters,
-        priceMin: priceRange[0] > 0 ? priceRange[0] : undefined,
-        priceMax: priceRange[1] < 10000 ? priceRange[1] : undefined,
-        areaMin: areaRange[0] > 0 ? areaRange[0] : undefined,
-        areaMax: areaRange[1] < 200 ? areaRange[1] : undefined,
-        roomsMin: roomsRange[0] > 1 ? roomsRange[0] : undefined,
-        roomsMax: roomsRange[1] < 6 ? roomsRange[1] : undefined,
-      }
-      const data = await propertyService.getProperties(filtersWithRanges)
+      const data = await propertyService.getProperties(filters)
       setProperties(data)
     } catch (err) {
       console.error('Error:', err)
@@ -55,7 +82,7 @@ const PropertiesShadcnRoute: React.FC = () => {
 
   useEffect(() => {
     fetchProperties()
-  }, [filters, priceRange, areaRange, roomsRange])
+  }, [filters])
 
   // Handle dark mode initialization and system preference changes
   useEffect(() => {
@@ -73,27 +100,9 @@ const PropertiesShadcnRoute: React.FC = () => {
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [darkMode])
 
-  const toggleSite = (site: string) => {
-    const currentSites = filters.sites || []
-    const updatedSites = currentSites.includes(site as any)
-      ? currentSites.filter(s => s !== site)
-      : [...currentSites, site as any]
-    setFilters({ ...filters, sites: updatedSites })
-  }
-
   const toggleDarkMode = () => {
     setDarkMode(!darkMode)
     document.documentElement.classList.toggle('dark', !darkMode)
-  }
-
-  const clearFilters = () => {
-    setFilters({
-      sites: ['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'],
-      sortBy: 'price_asc'
-    })
-    setPriceRange([0, 10000])
-    setAreaRange([0, 200])
-    setRoomsRange([1, 6])
   }
 
   const getSiteColor = (site: string) => {
@@ -165,14 +174,6 @@ const PropertiesShadcnRoute: React.FC = () => {
             >
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              {showFilters ? 'Ukryj Filtry' : 'Filtruj'}
-            </Button>
           </div>
         </div>
 
@@ -204,127 +205,8 @@ const PropertiesShadcnRoute: React.FC = () => {
           >
             {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            {showFilters ? 'Ukryj Filtry' : 'Filtruj'}
-          </Button>
         </div>
       </div>
-
-      {/* Filters */}
-      {showFilters && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Filtry</CardTitle>
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                <X className="h-4 w-4 mr-2" />
-                Resetuj
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Sites */}
-            <div>
-              <h3 className="text-sm font-medium mb-3">Źródła</h3>
-              <div className="flex flex-wrap gap-2">
-                {['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'].map((site) => (
-                  <div key={site} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={site}
-                      checked={filters.sites?.includes(site as any)}
-                      onCheckedChange={() => toggleSite(site)}
-                    />
-                    <label
-                      htmlFor={site}
-                      className="text-sm font-medium capitalize cursor-pointer"
-                    >
-                      {site}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Sort */}
-            <div>
-              <h3 className="text-sm font-medium mb-3">Sortuj według</h3>
-              <Select value={filters.sortBy} onValueChange={(value) => setFilters({ ...filters, sortBy: value as any })}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="price_asc">Cena: od najtańszych</SelectItem>
-                  <SelectItem value="price_desc">Cena: od najdroższych</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-
-            {/* Price Range */}
-            <div>
-              <h3 className="text-sm font-medium mb-3">
-                Zakres cen: {priceRange[0]}zł - {priceRange[1] >= 10000 ? '10000+' : priceRange[1]}zł
-              </h3>
-              <Slider
-                value={priceRange}
-                onValueChange={(value) => setPriceRange(value as [number, number])}
-                max={10000}
-                min={0}
-                step={100}
-                className="w-full"
-              />
-            </div>
-
-            {/* Area Range */}
-            <div>
-              <h3 className="text-sm font-medium mb-3">
-                Powierzchnia: {areaRange[0]}m² - {areaRange[1] >= 200 ? '200+' : areaRange[1]}m²
-              </h3>
-              <Slider
-                value={areaRange}
-                onValueChange={(value) => setAreaRange(value as [number, number])}
-                max={200}
-                min={0}
-                step={5}
-                className="w-full"
-              />
-            </div>
-
-            {/* Rooms Range */}
-            <div>
-              <h3 className="text-sm font-medium mb-3">
-                Pokoje: {roomsRange[0]} - {roomsRange[1] >= 6 ? '6+' : roomsRange[1]}
-              </h3>
-              <Slider
-                value={roomsRange}
-                onValueChange={(value) => setRoomsRange(value as [number, number])}
-                max={6}
-                min={1}
-                step={1}
-                className="w-full"
-              />
-            </div>
-
-            {/* Address Search */}
-            <div>
-              <h3 className="text-sm font-medium mb-3">Location</h3>
-              <Input
-                placeholder="Search by address..."
-                value={filters.address || ''}
-                onChange={(e) => setFilters({ ...filters, address: e.target.value })}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Properties Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-0">
@@ -406,11 +288,10 @@ const PropertiesShadcnRoute: React.FC = () => {
         <Card>
           <CardContent className="text-center py-12">
             <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No properties found</h3>
-            <p className="text-muted-foreground mb-4">
-              Try adjusting your filters to see more results
+            <h3 className="text-lg font-medium mb-2">Nie znaleziono ogłoszeń</h3>
+            <p className="text-muted-foreground">
+              Tutaj powinny być ogłoszenia...
             </p>
-            <Button onClick={clearFilters}>Clear Filters</Button>
           </CardContent>
         </Card>
       )}
