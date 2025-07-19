@@ -206,6 +206,26 @@ class PropertyScraper:
         
         return found.get(attr, "") if found else ""
     
+    def extract_address_from_title(self, title, city, config):
+        """Extract address from title text (e.g., 'Mieszkanie, Katowice, Bogucice, 43 m²')"""
+        if not title:
+            return city.title()
+        
+        # remove common prefixes like "Mieszkanie, "
+        clean_title = title
+        if "," in title:
+            parts = [part.strip() for part in title.split(",")]
+            if len(parts) >= 3:
+                # format: "Mieszkanie, City, District, Size"
+                # take city and district: "City, District"
+                return f"{parts[1]}, {parts[2]}"
+            elif len(parts) == 2:
+                # format: "Mieszkanie, City, Size" (no district)
+                # just return city
+                return parts[1].strip()
+        
+        return city.title()
+    
     def extract_number(self, text):
         """Get number from text"""
         if not text:
@@ -263,6 +283,21 @@ class PropertyScraper:
         
         # find pagination
         pag_config = config["selectors"]["pagination"]
+        
+        # handle data_page attribute pagination
+        if "data_page" in pag_config:
+            pages = soup.find_all(pag_config["tag"], attrs={"data-page": True})
+            max_page = 0
+            for page in pages:
+                try:
+                    page_num = page.get("data-page")
+                    if page_num and page_num.isdigit():
+                        max_page = max(max_page, int(page_num))
+                except:
+                    continue
+            
+            page_count = max_page if max_page > 0 else config["default_pages"]
+            return page_count, soup
         
         # handle otodom-specific pagination
         if "last_page_selector" in pag_config:
@@ -359,18 +394,32 @@ class PropertyScraper:
     
     def extract_property(self, listing, city, config):
         """Extract property data from listing element"""
-        selectors = config["selectors"]
-        
-        # get link
-        link_config = selectors["link"]
-        if link_config.get("nested"):
-            parent = listing.find(link_config["tag"], class_=link_config["class"])
-            link_elem = parent.find(link_config["nested"]["tag"]) if parent else None
-        else:
-            # find any link in the listing
-            link_elem = listing.find("a")
-        
-        if not link_elem:
+        try:
+            selectors = config["selectors"]
+            
+            # get link
+            link_config = selectors["link"]
+            
+            if isinstance(link_config, dict) and link_config.get("nested"):
+                parent = listing.find(link_config["tag"], class_=link_config["class"])
+                link_elem = parent.find(link_config["nested"]["tag"]) if parent else None
+            elif isinstance(link_config, list):
+                # handle list format like [["a", "_1e32a_zIS-q"]]
+                link_elem = None
+                for selector in link_config:
+                    if len(selector) >= 2:
+                        tag, css_class = selector[0], selector[1]
+                        link_elem = listing.find(tag, class_=css_class)
+                        if link_elem:
+                            break
+            else:
+                # find any link in the listing
+                link_elem = listing.find("a")
+            
+            if not link_elem:
+                return None
+        except Exception as e:
+            print(f"ERROR: Error in extract_property: {e}")
             return None
         
         link = link_elem.get("href", "")
@@ -395,14 +444,23 @@ class PropertyScraper:
         if not title:
             return None
         
-        # get address - handle data attributes
+        # get address - handle data attributes or extract from title
         address = ""
         address_config = selectors["address"]
+        
         if isinstance(address_config, dict) and address_config.get("data_sentry_component"):
             address_elem = listing.find(address_config["tag"], attrs={"data-sentry-component": address_config["data_sentry_component"]})
             address = address_elem.get_text(strip=True) if address_elem else ""
         else:
-            address = self.find_in_element(listing, selectors["address"])
+            try:
+                address = self.find_in_element(listing, selectors["address"])
+            except Exception as e:
+                print(f"DEBUG: Error in find_in_element for address: {e}")
+                address = ""
+        
+        # if no separate address found, extract from title
+        if not address and title:
+            address = self.extract_address_from_title(title, city, config)
         
         if not address:
             address = city.title()
@@ -418,6 +476,16 @@ class PropertyScraper:
         if isinstance(price_config, dict) and price_config.get("data_sentry_element"):
             price_elem = listing.find(price_config["tag"], attrs={"data-sentry-element": price_config["data_sentry_element"]})
             price_text = price_elem.get_text(strip=True) if price_elem else ""
+        elif isinstance(price_config, dict) and price_config.get("attribute") and price_config.get("data_pattern"):
+            # handle attribute-based extraction
+            pattern = price_config["data_pattern"]
+            price_elems = listing.find_all(price_config["tag"])
+            price_text = ""
+            for elem in price_elems:
+                attr_value = elem.get(price_config["attribute"], "")
+                if pattern in attr_value:
+                    price_text = attr_value
+                    break
         else:
             price_text = self.find_with_fallback(
                 listing, 
@@ -441,7 +509,11 @@ class PropertyScraper:
                     if source:
                         image = source.get(img_config["attribute"], "")
             else:
-                image = self.find_attribute(listing, img_config["tag"], img_config["class"], img_config["attribute"])
+                image = self.find_attribute(listing, img_config["tag"], img_config.get("class", ""), img_config["attribute"])
+        
+        # upgrade image quality from s180 to s720 (allegro)
+        if image and "allegroimg.com/s180" in image:
+            image = image.replace("s180", "s720")
         
         # get area, rooms, level
         area = 0
@@ -466,6 +538,25 @@ class PropertyScraper:
                     # level is third dd
                     level_text = dd_elements[2].get_text(strip=True)
                     level = self.extract_number(level_text)
+            
+            # handle allegro-style label-value pairs
+            elif isinstance(details_config, dict) and details_config.get("tag") == "span":
+                # Find all spans with the value class
+                value_spans = listing.find_all(details_config["tag"], class_=details_config["class"])
+                label_spans = listing.find_all("span", class_="mgmw_3z _1e32a_XFNn4")
+                
+                # Create label-value mapping
+                for i, label_span in enumerate(label_spans):
+                    label_text = label_span.get_text(strip=True).lower()
+                    if i < len(value_spans):
+                        value_text = value_spans[i].get_text(strip=True)
+                        
+                        if "powierzchnia" in label_text:
+                            area = self.extract_number(value_text)
+                        elif "pokoi" in label_text:
+                            rooms = self.extract_number(value_text)
+                        elif "piętro" in label_text:
+                            level = self.extract_number(value_text)
             
             elif isinstance(details_config, dict) and "area" in details_config:
                 # complex details like olx and nieruchomosci
@@ -680,6 +771,8 @@ class PropertyScraper:
             
         except Exception as e:
             print(f"scrape_site: error: {e}")
+            import traceback
+            traceback.print_exc()
             self.update_job(job_id, {"status": "failed", "error": str(e)})
             return {"success": False, "error": str(e)}
         finally:

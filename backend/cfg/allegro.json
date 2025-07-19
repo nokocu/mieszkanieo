@@ -1,0 +1,71 @@
+{
+  "name": "Allegro.pl",
+  "site_name": "allegro",
+  "base_domain": "https://allegro.pl",
+  "base_url": "https://allegro.pl/kategoria/mieszkania-do-wynajecia-112745?order=p&city={city}",
+  "page_url": "https://allegro.pl/kategoria/mieszkania-do-wynajecia-112745?order=p&city={city}&p={page}",
+  "has_pagination": true,
+  "default_pages": 10,
+  "delay_between_pages": 3,
+  
+  "selectors": {
+    "wait_element": {
+      "type": "css",
+      "value": "article"
+    },
+    "listings_container": {
+      "tag": "ul",
+      "class": "mpof_ki mwdn_1 mg9e_0 mvrt_0 mj7a_0 mh36_0 mp4t_0 m3h2_0 mryx_0 munh_0 m7er_k4"
+    },
+    "listing_item": {
+      "tag": "li"
+    },
+    "pagination": {
+      "tag": "a",
+      "data_page": ""
+    },
+    
+    "title": [
+      ["a", "_1e32a_zIS-q"]
+    ],
+    
+    "address": [
+      ["a", "_1e32a_zIS-q"]
+    ],
+    
+    "price": {
+      "tag": "span",
+      "attribute": "aria-label",
+      "data_pattern": "aktualna cena"
+    },
+    
+    "link": [
+      ["a", "_1e32a_zIS-q"]
+    ],
+    
+    "image": {
+      "tag": "img",
+      "attribute": "src"
+    },
+    
+    "details": {
+      "tag": "span",
+      "class": "mgmw_wo mvrt_8"
+    }
+  },
+  
+  "processing_rules": {
+    "address_cleanup": [
+      {
+        "type": "regex",
+        "pattern": "^Mieszkanie,\\s*",
+        "replacement": ""
+      },
+      {
+        "type": "regex", 
+        "pattern": ",\\s*\\d+\\s*m²$",
+        "replacement": ""
+      }
+    ]
+  }
+}
