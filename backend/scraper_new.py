@@ -57,10 +57,18 @@ class PropertyScraper:
         print(f"City '{city}' not found in location mapping")
         return None
     
-    def setup_browser(self):
+    def setup_browser(self, fresh_instance=False):
         """Start chrome browser"""
-        if self.driver:
+        if self.driver and not fresh_instance:
             return
+        
+        # close existing driver if creating fresh instance
+        if fresh_instance and self.driver:
+            try:
+                self.driver.quit()
+            except:
+                pass
+            self.driver = None
         
         self.driver = uc.Chrome(use_subprocess=False, headless=self.headless)
         self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -329,6 +337,12 @@ class PropertyScraper:
     def scrape_page(self, city, page_num, config, preloaded_soup=None):
         """Scrape one page of listings"""
         if preloaded_soup is None:
+            # use fresh browser instance for each page to avoid bot detection
+            is_allegro = config.get("site_name") == "allegro"
+            if is_allegro and page_num > 1:
+                print(f"scrape_page: creating fresh browser instance for Allegro page {page_num}")
+                self.setup_browser(fresh_instance=True)
+            
             # handle CSV-based location mapping
             if config.get("use_csv_location"):
                 if config.get("csv_file"):
@@ -804,7 +818,7 @@ def main():
         with open(config_file, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
-        scraper = PropertyScraper(headless=True)
+        scraper = PropertyScraper(headless=False)
         result = scraper.scrape_site(city, config, max_pages)
         
         if result["success"]:
