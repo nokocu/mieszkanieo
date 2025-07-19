@@ -43,32 +43,5 @@ export const propertyService = {
       console.error('Error fetching properties:', error)
       throw error
     }
-  },
-
-  async scrapeCity(city: string): Promise<ScrapingResponse> {
-    try {
-      const response = await api.post<ApiResponse<ScrapingResponse>>('/scrape', {
-        city: city.toLowerCase(),
-      })
-      
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to start scraping')
-      }
-      
-      return response.data.data
-    } catch (error) {
-      console.error('Error starting scrape:', error)
-      throw error
-    }
-  },
-
-  async getScrapingStatus(jobId: string) {
-    try {
-      const response = await api.get(`/scrape/status/${jobId}`)
-      return response.data
-    } catch (error) {
-      console.error('Error getting scraping status:', error)
-      throw error
-    }
   }
 }

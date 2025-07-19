@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: 'OpenSans';
-  src: url('/OpenSans-VariableFont_wdth,wght.ttf') format('truetype');
+  font-family: 'Geist';
+  src: url('/Geist-VariableFont_wght.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -10,15 +10,14 @@
 
 html {
   scrollbar-width: thin;
-
   /* background-color: #030712; */
-  color: white;
-  font-family: "OpenSans", system-ui;
+  /* color: white; */
+  font-family: "Geist", system-ui;
   scrollbar-gutter: stable;
 }
 
 /* Ensure proper dark mode support */
 .system {
-  color-scheme: light dark;
+  /* color-scheme: light dark; */
 }
 

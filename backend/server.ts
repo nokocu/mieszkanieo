@@ -83,8 +83,112 @@ function createTables() {
 
 // get all properties
 app.get('/api/properties', (req, res) => {
-  db.all('SELECT * FROM properties ORDER BY id DESC', (err, rows) => {
+  const { 
+    sites, 
+    sort_by, 
+    price_min, 
+    price_max, 
+    area_min, 
+    area_max, 
+    rooms_min, 
+    rooms_max, 
+    level_min, 
+    level_max, 
+    address, 
+    city,
+    limit 
+  } = req.query;
+
+  let query = 'SELECT * FROM properties WHERE 1=1';
+  const params: any[] = [];
+
+  // filter by sites
+  if (sites) {
+    const siteArray = Array.isArray(sites) ? sites : [sites];
+    const validSites = siteArray.filter(site => 
+      ['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'].includes(site as string)
+    );
+    if (validSites.length > 0) {
+      const placeholders = validSites.map(() => '?').join(',');
+      query += ` AND site IN (${placeholders})`;
+      params.push(...validSites);
+    }
+  }
+
+  // filter by price range
+  if (price_min) {
+    query += ' AND price >= ?';
+    params.push(parseInt(price_min as string));
+  }
+  if (price_max) {
+    query += ' AND price <= ?';
+    params.push(parseInt(price_max as string));
+  }
+
+  // filter by area range
+  if (area_min) {
+    query += ' AND area >= ?';
+    params.push(parseInt(area_min as string));
+  }
+  if (area_max) {
+    query += ' AND area <= ?';
+    params.push(parseInt(area_max as string));
+  }
+
+  // filter by rooms range
+  if (rooms_min) {
+    query += ' AND rooms >= ?';
+    params.push(parseInt(rooms_min as string));
+  }
+  if (rooms_max) {
+    query += ' AND rooms <= ?';
+    params.push(parseInt(rooms_max as string));
+  }
+
+  // filter by level range
+  if (level_min) {
+    query += ' AND level >= ?';
+    params.push(parseInt(level_min as string));
+  }
+  if (level_max) {
+    query += ' AND level <= ?';
+    params.push(parseInt(level_max as string));
+  }
+
+  // filter by address
+  if (address) {
+    query += ' AND address LIKE ?';
+    params.push(`%${address}%`);
+  }
+
+  // filter by city
+  if (city) {
+    query += ' AND city LIKE ?';
+    params.push(`%${city}%`);
+  }
+
+  // sorting
+  if (sort_by === 'price_asc') {
+    query += ' ORDER BY price ASC';
+  } else if (sort_by === 'price_desc') {
+    query += ' ORDER BY price DESC';
+  } else if (sort_by === 'area_asc') {
+    query += ' ORDER BY area ASC';
+  } else if (sort_by === 'area_desc') {
+    query += ' ORDER BY area DESC';
+  } else {
+    query += ' ORDER BY created_at DESC';
+  }
+
+  // limit
+  if (limit) {
+    query += ' LIMIT ?';
+    params.push(parseInt(limit as string));
+  }
+
+  db.all(query, params, (err, rows) => {
     if (err) {
+      console.error('Database error:', err);
       res.status(500).json({ error: err.message });
       return;
     }
