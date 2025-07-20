@@ -633,6 +633,26 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
       if (err) console.error('Error updating job progress:', err.message);
     });
   };
+  
+  // delete all existing properties at the start of the job
+  console.log(`Clearing existing data before scraping...`);
+  try {
+    await new Promise((resolve, reject) => {
+      db.run('DELETE FROM properties', (err) => {
+        if (err) {
+          console.error('Error deleting existing properties:', err.message);
+          reject(err);
+        } else {
+          console.log('Successfully cleared existing properties');
+          resolve(undefined);
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Failed to clear existing data:', error);
+    updateProgress(0, 0, 'failed', 'Failed to clear existing data');
+    return;
+  }
 
   try {
     for (const site of sites) {
@@ -702,6 +722,7 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
     }
     
     console.log(`Scraping job ${jobId} completed. Total found: ${totalFound}`);
+    updateProgress(100, totalFound, 'completed');
     
   } catch (error) {
     console.error(`Scraping job ${jobId} failed:`, error);

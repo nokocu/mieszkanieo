@@ -1,21 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { Property, PropertyFilters } from '../../types'
-import { propertyService } from '../../lib/propertyService'
-import { Button } from "../../components/ui/button"
-import { Card, CardContent } from "../../components/ui/card"
-import { Badge } from "../../components/ui/badge"
-import { MapPin, Building, DoorClosed, Ruler, Moon, Sun, ArrowBigUp } from 'lucide-react'
+import { Property, PropertyFilters } from '../types'
+import { propertyService } from '../lib/propertyService'
+import { Card, CardContent } from "./ui/card"
+import { Badge } from "./ui/badge"
+import { MapPin, Building, DoorClosed, Ruler, ArrowBigUp } from 'lucide-react'
 
 const PropertiesShadcnRoute: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
-  const [darkMode, setDarkMode] = useState(() => {
-    // Check system preference on initialization
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-    }
-    return false
-  })
   
   // get filters from sidebar (localStorage + event listener)
   const [filters, setFilters] = useState<PropertyFilters>(() => {
@@ -94,27 +86,6 @@ const PropertiesShadcnRoute: React.FC = () => {
     fetchProperties()
   }, [filters])
 
-  // Handle dark mode initialization and system preference changes
-  useEffect(() => {
-    // Set initial dark mode class
-    document.documentElement.classList.toggle('dark', darkMode)
-    
-    // Listen for system preference changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleChange = (e: MediaQueryListEvent) => {
-      setDarkMode(e.matches)
-      document.documentElement.classList.toggle('dark', e.matches)
-    }
-    
-    mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [darkMode])
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode)
-    document.documentElement.classList.toggle('dark', !darkMode)
-  }
-
   const getSiteColor = (site: string) => {
     const colors: { [key: string]: string } = {
       allegro: 'bg-orange-600',
@@ -176,15 +147,6 @@ const PropertiesShadcnRoute: React.FC = () => {
               Ładowanie ogłoszeń...
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={toggleDarkMode}
-            >
-              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-          </div>
         </div>
 
         {/* Skeleton Properties Grid */}
@@ -206,15 +168,6 @@ const PropertiesShadcnRoute: React.FC = () => {
           <p className="text-muted-foreground">
             {properties.length} ogłoszeń
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={toggleDarkMode}
-          >
-            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
         </div>
       </div>
 

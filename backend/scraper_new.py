@@ -734,7 +734,6 @@ class PropertyScraper:
             all_properties = []
             saved_count = 0
             empty_pages_count = 0
-            city_data_deleted = False
             
             for page in range(1, total_pages + 1):
                 progress = int((page - 1) / total_pages * 100)
@@ -763,13 +762,6 @@ class PropertyScraper:
                     empty_pages_count = 0  # reset counter when we find properties
                 
                 all_properties.extend(properties)
-                
-                # delete existing data from database
-                if properties and not city_data_deleted:
-                    print(f"scrape_site: deleting all existing properties from database before adding new data")
-                    deleted_count = self.delete_all_properties()
-                    print(f"scrape_site: deleted {deleted_count} existing properties from database")
-                    city_data_deleted = True
                 
                 # save properties in batch
                 if properties:
