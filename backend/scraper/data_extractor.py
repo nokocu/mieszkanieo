@@ -395,7 +395,7 @@ class DataExtractor:
                     level = self.extract_floor_number(level_text)
             
             # handle allegro-style label-value pairs
-            elif isinstance(details_config, dict) and details_config.get("tag") == "span":
+            elif isinstance(details_config, dict) and details_config.get("tag") == "span" and config.get("site_name") != "gethome":
                 # Find all spans with the value class
                 value_spans = listing.find_all(details_config["tag"], class_=details_config["class"])
                 label_spans = listing.find_all("span", class_="mgmw_3z _1e32a_XFNn4")
@@ -429,10 +429,26 @@ class DataExtractor:
                     level = extracted_details.get("level", level)
             else:
                 # simple details like gethome
-                detail_spans = listing.find_all(details_config["tag"], class_=details_config["class"])
-                if len(detail_spans) >= 2:
-                    rooms = self.extract_number(detail_spans[0].get_text())
-                    area = self.extract_number(detail_spans[1].get_text())
+                if config.get("site_name") == "gethome":
+                    # get room count from specific data-testid
+                    room_span = listing.find("span", {"data-testid": "number-of-rooms-offerbox"})
+                    if room_span:
+                        rooms = self.extract_number(room_span.get_text())
+                    
+                    # get area from ngl9ymk spans that don't have data-testid
+                    area_spans = listing.find_all("span", class_="ngl9ymk")
+                    for span in area_spans:
+                        if not span.get("data-testid"):  # no data-testid means its area
+                            span_text = span.get_text()
+                            if any(char.isdigit() for char in span_text):
+                                area = self.extract_number(span_text)
+                                break
+                else:
+                    # other simple detail sites
+                    detail_spans = listing.find_all(details_config["tag"], class_=details_config["class"])
+                    if len(detail_spans) >= 2:
+                        rooms = self.extract_number(detail_spans[0].get_text())
+                        area = self.extract_number(detail_spans[1].get_text())
         
         return {
             "id": hashlib.md5(link.encode()).hexdigest()[:12],
