@@ -25,7 +25,7 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // filter states
   const [priceRange, setPriceRange] = React.useState<[number, number]>([0, 10000])
   const [areaRange, setAreaRange] = React.useState<[number, number]>([0, 200])
-  const [roomsRange, setRoomsRange] = React.useState<[number, number]>([1, 6])
+  const [roomsRange, setRoomsRange] = React.useState<[number, number]>([1, 8])
   const [selectedSites, setSelectedSites] = React.useState<string[]>(['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'])
   const [sortBy, setSortBy] = React.useState('price_asc')
   const [address, setAddress] = React.useState('')
@@ -87,8 +87,7 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
             
             {/* Sites */}
             <div>
-              <h4 className="text-sm font-medium mb-2">Źródła</h4>
-              <div className="space-y-2">
+              <div className="mt-2 space-y-3">
                 {['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'].map((site) => (
                   <div key={site} className="flex items-center space-x-2">
                     <Switch
@@ -125,7 +124,10 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {/* Price Range */}
             <div>
               <h4 className="text-sm font-medium mb-2">
-                Cena: {priceRange[0]}zł - {priceRange[1] >= 10000 ? '10000+ ' : priceRange[1]}zł
+                Cena
+              </h4>
+              <h4 className="text-xs font-medium mb-2 text-center">
+                {priceRange[0]}zł - {priceRange[1] >= 10000 ? '10000+ ' : priceRange[1]}zł
               </h4>
               <Slider
                 value={priceRange}
@@ -140,7 +142,10 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {/* Area Range */}
             <div>
               <h4 className="text-sm font-medium mb-2">
-                Powierzchnia: {areaRange[0]}m² - {areaRange[1] >= 200 ? '200+ ' : areaRange[1]}m²
+                Powierzchnia
+              </h4>
+              <h4 className="text-xs mb-2 text-center">
+                {areaRange[0]}m² - {areaRange[1] >= 200 ? '200+ ' : areaRange[1]}m²
               </h4>
               <Slider
                 value={areaRange}
@@ -155,7 +160,10 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {/* Rooms Range */}
             <div>
               <h4 className="text-sm font-medium mb-2">
-                Pokoje: {roomsRange[0]} - {roomsRange[1] >= 8 ? '8+' : roomsRange[1]}
+                Pokoje
+              </h4>
+              <h4 className="text-xs mb-2 text-center">
+                {roomsRange[0]} - {roomsRange[1] >= 8 ? '8+' : roomsRange[1]}
               </h4>
               <Slider
                 value={roomsRange}
