@@ -118,7 +118,17 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SelectContent>
               </Select>
             </div>
-
+            
+            <Separator />
+            {/* Address Search */}
+            <div>
+              <h4 className="text-sm font-medium mb-2">Adres</h4>
+              <Input
+                placeholder="Wpisz adres..."
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+            </div>
             <Separator />
 
             {/* Price Range */}
@@ -172,16 +182,6 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 min={1}
                 step={1}
                 className="w-full"
-              />
-            </div>
-            <Separator />
-            {/* Address Search */}
-            <div>
-              <h4 className="text-sm font-medium mb-2">Adres</h4>
-              <Input
-                placeholder="Wpisz adres..."
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
               />
             </div>
           </SidebarGroupContent>

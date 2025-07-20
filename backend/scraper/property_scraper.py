@@ -124,7 +124,7 @@ class PropertyScraper:
         else:
             url = config["base_url"].format(city=unidecode(city).lower())
         
-        self.browser_manager.navigate_to_url(url)
+        self.browser_manager.navigate_to_url(url, site_name=config.get("site_name", ""))
         wait_config = config["selectors"]["wait_element"]
         
         if not self.wait_for_page(wait_config["value"], wait_config["type"]):
@@ -199,7 +199,7 @@ class PropertyScraper:
             
             print(f"scrape_page: scraping page {page_num}: {url}")
             
-            self.browser_manager.navigate_to_url(url)
+            self.browser_manager.navigate_to_url(url, site_name=config.get("site_name", ""))
             
             # check if we got redirected before waiting for elements
             if config.get("site_name") == "otodom" and page_num > 1:
@@ -362,7 +362,7 @@ def main():
         with open(config_file, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
-        scraper = PropertyScraper(headless=True)
+        scraper = PropertyScraper(headless=False)
         result = scraper.scrape_site(city, config, max_pages)
         
         if result["success"]:

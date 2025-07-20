@@ -59,10 +59,42 @@ class BrowserManager:
             print("wait_for_page: timeout waiting for page element")
             return False
     
-    def navigate_to_url(self, url: str) -> None:
-        """Navigate to URL"""
+    def scroll_to_bottom(self, wait_time: float = 2.0) -> None:
+        """Scroll to bottom of page to trigger lazy loading"""
+        if not self.driver:
+            return
+        
+        try:
+            # get initial page height
+            last_height = self.driver.execute_script("return document.body.scrollHeight")
+            
+            while True:
+                # scroll to bottom
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                
+                # wait for new content to load
+                time.sleep(wait_time)
+                
+                # Calculate new page height
+                new_height = self.driver.execute_script("return document.body.scrollHeight")
+                
+                # If no new content loaded, break
+                if new_height == last_height:
+                    break
+                    
+                last_height = new_height
+            
+        except Exception as e:
+            print(f"scroll_to_bottom_and_wait: error during scrolling: {e}")
+
+    def navigate_to_url(self, url: str, auto_scroll: bool = True, site_name: str = "") -> None:
+        """Navigate to URL and optionally trigger lazy loading by scrolling"""
         if self.driver:
             self.driver.get(url)
+            
+            # only auto-scroll for OLX for lazy loading
+            if auto_scroll and site_name.lower() == "olx":
+                self.scroll_to_bottom()
     
     def get_current_url(self) -> str:
         """Get current URL"""

@@ -234,10 +234,10 @@ const PropertiesShadcnRoute: React.FC = () => {
                       {property.rooms}
                     </div>
                   )}
-                  {property.level && (
+                  {property.level !== null && property.level !== undefined && (
                     <div className="flex items-center">
                       <ArrowBigUp className="h-4 w-4 mr-1" />
-                      {property.level}p
+                      {property.level === 0 ? 'parter' : `${property.level}p`}
                     </div>
                   )}
                 </div>

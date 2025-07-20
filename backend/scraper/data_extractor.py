@@ -86,8 +86,11 @@ class DataExtractor:
                                     value_parts = [strong.get_text().strip() for strong in nested]
                                     value_text = "".join(value_parts)
                                     
-                                    # apply extract_number which handles "parter" case and floor format
-                                    results[field] = self.extract_number(value_text)
+                                    # use proper floor extraction for level field
+                                    if field == "level":
+                                        results[field] = self.extract_floor_number(value_text)
+                                    else:
+                                        results[field] = self.extract_number(value_text)
                                     break
             
             return results
@@ -172,6 +175,39 @@ class DataExtractor:
         # extract digits
         digits = "".join(c for c in clean if c.isdigit())
         return int(digits) if digits else 0
+
+    def extract_floor_number(self, text):
+        """Extract floor number with proper handling of ground floor vs missing data"""
+        if not text:
+            return None  # missing data
+        
+        text_lower = text.lower().strip()
+        
+        # handle "parter" (ground floor) - return 0
+        if "parter" in text_lower:
+            return 0
+        
+        # clean text
+        clean = text.replace("zł", "").replace("m²", "").replace(" ", "")
+        
+        # handle floor format like "11/13" - take the first number (actual floor)
+        if "/" in clean:
+            clean = clean.split("/")[0]
+        
+        # get integer part only
+        if "," in clean:
+            clean = clean.split(",")[0]
+        if "." in clean:
+            clean = clean.split(".")[0]
+        
+        # extract digits
+        digits = "".join(c for c in clean if c.isdigit())
+        if digits:
+            return int(digits)
+        
+        # if no digits found, return None (missing data)
+        return None
+
     
     def extract_property(self, listing, city, config):
         """Extract property data from listing element"""
@@ -290,7 +326,45 @@ class DataExtractor:
                     if source:
                         image = source.get(img_config["attribute"], "")
             else:
-                image = self.find_attribute(listing, img_config["tag"], img_config.get("class", ""), img_config["attribute"])
+                # for OLX, find img element and extract from srcset if available
+                if config["site_name"] == "olx":
+                    img_elem = listing.find(img_config["tag"])
+                    if img_elem:
+                        # try to get highest quality from srcset first
+                        srcset = img_elem.get("srcset", "")
+                        if srcset:
+                            # parse srcset to find highest resolution (600w)
+                            sources = []
+                            for source in srcset.split(","):
+                                source = source.strip()
+                                if " " in source:
+                                    url, descriptor = source.rsplit(" ", 1)
+                                    # extract width from descriptor like "600w"
+                                    if descriptor.endswith("w"):
+                                        try:
+                                            width = int(descriptor[:-1])
+                                            sources.append((width, url.strip()))
+                                        except ValueError:
+                                            continue
+                            
+                            # return the URL with highest width
+                            if sources:
+                                sources.sort(key=lambda x: x[0], reverse=True)
+                                image = sources[0][1]
+                        
+                        # fallback to src if srcset didn't work
+                        if not image:
+                            image = img_elem.get(img_config["attribute"], "")
+                        
+                        # handle placeholder images - set to empty instead of showing placeholder
+                        if image and ("no_thumbnail" in image or "placeholder" in image):
+                            image = ""
+                        # fix relative URLs for OLX (only if not a placeholder)
+                        elif image and image.startswith("/"):
+                            image = config["base_domain"] + image
+                else:
+                    # for non-OLX sites, use original logic
+                    image = self.find_attribute(listing, img_config["tag"], img_config.get("class", ""), img_config["attribute"])
         
         # upgrade image quality from s180 to s720 (allegro)
         if image and "allegroimg.com/s180" in image:
@@ -318,7 +392,7 @@ class DataExtractor:
                     
                     # level is third dd
                     level_text = dd_elements[2].get_text(strip=True)
-                    level = self.extract_number(level_text)
+                    level = self.extract_floor_number(level_text)
             
             # handle allegro-style label-value pairs
             elif isinstance(details_config, dict) and details_config.get("tag") == "span":
@@ -337,7 +411,7 @@ class DataExtractor:
                         elif "pokoi" in label_text:
                             rooms = self.extract_number(value_text)
                         elif "piętro" in label_text:
-                            level = self.extract_number(value_text)
+                            level = self.extract_floor_number(value_text)
             
             elif isinstance(details_config, dict) and "area" in details_config:
                 # complex details like olx and nieruchomosci
