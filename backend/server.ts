@@ -659,14 +659,14 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
       console.log(`Processing site: ${site} for job ${jobId}`);
       
       // determine config file
-      const configFile = path.join(__dirname, 'cfg', `${site}.json`);
+      const configFile = path.join(__dirname, 'scraper', 'cfg', `${site}.json`);
       
       // determine max pages
       const maxPages = sitePages[site] && sitePages[site] !== 'all' ? sitePages[site] : 'all';
       
       // prepare python command
       const pythonArgs = [
-        path.join(__dirname, 'scraper_new.py'),
+        path.join(__dirname, 'scraper_entry.py'),
         configFile,
         city.toLowerCase()
       ];
