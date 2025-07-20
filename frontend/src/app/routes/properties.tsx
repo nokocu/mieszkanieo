@@ -64,8 +64,18 @@ const PropertiesShadcnRoute: React.FC = () => {
       })
     }
 
+    const handleRefreshCompleted = () => {
+      // reload properties when refresh is completed
+      fetchProperties()
+    }
+
     window.addEventListener('filtersChanged', handleFiltersChanged as EventListener)
-    return () => window.removeEventListener('filtersChanged', handleFiltersChanged as EventListener)
+    window.addEventListener('refreshCompleted', handleRefreshCompleted as EventListener)
+    
+    return () => {
+      window.removeEventListener('filtersChanged', handleFiltersChanged as EventListener)
+      window.removeEventListener('refreshCompleted', handleRefreshCompleted as EventListener)
+    }
   }, [])
 
   const fetchProperties = async () => {

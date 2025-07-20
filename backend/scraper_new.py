@@ -50,6 +50,11 @@ class PropertyScraper:
         if not config.get("use_csv_location"):
             return unidecode(city).lower()
             
+        # load CSV mapping if not already loaded and needed
+        if not self.location_mapping and config.get("csv_file"):
+            csv_path = os.path.join(os.path.dirname(__file__), config["csv_file"])
+            self.load_location_mapping(csv_path)
+            
         city_key = unidecode(city).lower()
         if city_key in self.location_mapping:
             return self.location_mapping[city_key]
@@ -268,10 +273,6 @@ class PropertyScraper:
             
         # handle CSV-based location mapping
         if config.get("use_csv_location"):
-            if config.get("csv_file"):
-                csv_path = os.path.join(os.path.dirname(__file__), config["csv_file"])
-                self.load_location_mapping(csv_path)
-            
             city_path = self.get_city_url_path(city, config)
             if city_path is None:
                 return config.get("default_pages", 50), None
@@ -345,10 +346,6 @@ class PropertyScraper:
             
             # handle CSV-based location mapping
             if config.get("use_csv_location"):
-                if config.get("csv_file"):
-                    csv_path = os.path.join(os.path.dirname(__file__), config["csv_file"])
-                    self.load_location_mapping(csv_path)
-                
                 city_path = self.get_city_url_path(city, config)
                 if city_path is None:
                     return []
@@ -360,6 +357,19 @@ class PropertyScraper:
             print(f"scrape_page: scraping page {page_num}: {url}")
             
             self.driver.get(url)
+            
+            # check if we got redirected before waiting for elements
+            if config.get("site_name") == "otodom" and page_num > 1:
+                actual_url = self.driver.current_url
+                print(f"scrape_page: otodom page {page_num} - requested: {url}")
+                print(f"scrape_page: otodom page {page_num} - actual: {actual_url}")
+                
+                # check if we were redirected to a different page
+                if (f"page={page_num}" not in actual_url and 
+                    ("page=1" in actual_url or not "page=" in actual_url)):
+                    print(f"scrape_page: otodom redirect detected on page {page_num}, returning empty")
+                    return []
+            
             wait_config = config["selectors"]["wait_element"]
             
             if not self.wait_for_page(wait_config["value"], wait_config["type"]):
@@ -607,11 +617,11 @@ class PropertyScraper:
             "image": image
         }
     
-    def delete_city_properties(self, city):
-        """Delete all properties for a specific city"""
+    def delete_all_properties(self):
+        """Delete all properties from database"""
         try:
             response = requests.delete(
-                f"{self.api_url}/api/properties/city/{city}",
+                f"{self.api_url}/api/properties",
                 headers={"Content-Type": "application/json"},
                 timeout=30
             )
@@ -619,14 +629,14 @@ class PropertyScraper:
             if response.status_code == 200:
                 result = response.json()
                 deleted_count = result.get('deletedCount', 0)
-                print(f"delete_city_properties: deleted {deleted_count} properties from {city}")
+                print(f"delete_all_properties: deleted {deleted_count} properties from database")
                 return deleted_count
             else:
-                print(f"delete_city_properties: api error {response.status_code}: {response.text}")
+                print(f"delete_all_properties: api error {response.status_code}: {response.text}")
                 return 0
                 
         except Exception as e:
-            print(f"delete_city_properties: delete error: {e}")
+            print(f"delete_all_properties: delete error: {e}")
             return 0
 
     def save_properties_batch(self, properties):
@@ -747,17 +757,18 @@ class PropertyScraper:
                     
                     # for sites with pagination, stop after 1 empty page
                     if config.get("has_pagination", True):
+                        print("scrape_site: stopping due to empty page on paginated site")
                         break
                 else:
                     empty_pages_count = 0  # reset counter when we find properties
                 
                 all_properties.extend(properties)
                 
-                # delete existing city data
+                # delete existing data from database
                 if properties and not city_data_deleted:
-                    print(f"scrape_site: deleting existing properties for {city} before adding new data")
-                    deleted_count = self.delete_city_properties(city.title())
-                    print(f"scrape_site: deleted {deleted_count} existing properties for {city}")
+                    print(f"scrape_site: deleting all existing properties from database before adding new data")
+                    deleted_count = self.delete_all_properties()
+                    print(f"scrape_site: deleted {deleted_count} existing properties from database")
                     city_data_deleted = True
                 
                 # save properties in batch

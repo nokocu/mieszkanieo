@@ -25,6 +25,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "./ui/sidebar"
+import { propertyService } from "../lib/propertyService"
 
 export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Filter states
@@ -37,6 +38,8 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Refresh states
   const [refreshing, setRefreshing] = React.useState(false)
+  const [refreshJobId, setRefreshJobId] = React.useState<string | null>(null)
+  const [refreshStatus, setRefreshStatus] = React.useState<string>('')
   const [lastRefresh, setLastRefresh] = React.useState<Date | null>(() => {
     const stored = localStorage.getItem('lastRefresh')
     return stored ? new Date(stored) : null
@@ -95,17 +98,114 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }
 
   const handleRefresh = async () => {
+    if (!canRefresh) return
+
     setRefreshing(true)
+    setRefreshStatus('Rozpoczynanie...')
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      const now = new Date()
-      setLastRefresh(now)
-      localStorage.setItem('lastRefresh', now.toISOString())
+      // get enabled sites
+      const enabledSites = Object.entries(refreshSites)
+        .filter(([, config]) => config.enabled)
+        .map(([site]) => site)
+      
+      // prepare site pages mapping
+      const sitePages: Record<string, string> = {}
+      Object.entries(refreshSites).forEach(([site, config]) => {
+        if (config.enabled) {
+          sitePages[site] = config.pages
+        }
+      })
+
+      // start refresh job
+      const result = await propertyService.startRefresh(refreshCity, enabledSites, sitePages)
+      
+      if (result.success && result.jobId) {
+        setRefreshJobId(result.jobId)
+        setRefreshStatus('Scrapowanie w toku...')
+        
+        // start polling for status
+        pollRefreshStatus(result.jobId)
+        
+      } else {
+        throw new Error(result.error || 'Failed to start refresh')
+      }
+      
     } catch (error) {
       console.error('Refresh failed:', error)
-    } finally {
+      setRefreshStatus('Błąd podczas odświeżania')
       setRefreshing(false)
+      
+      // show error for a few seconds then clear
+      setTimeout(() => {
+        setRefreshStatus('')
+      }, 5000)
     }
+  }
+
+  const pollRefreshStatus = async (jobId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const statusResult = await propertyService.getRefreshStatus(jobId)
+        
+        if (statusResult.success && statusResult.job) {
+          const job = statusResult.job
+          
+          // update status message
+          if (job.status === 'running') {
+            setRefreshStatus(`W toku... ${job.progress}% (${job.totalFound} znalezionych)`)
+          } else if (job.status === 'completed') {
+            setRefreshStatus(`Zakończono! Znaleziono ${job.totalFound} ogłoszeń`)
+            const now = new Date()
+            setLastRefresh(now)
+            localStorage.setItem('lastRefresh', now.toISOString())
+            
+            // Store the city that was just scraped
+            if (refreshCity.trim()) {
+              const formattedCity = refreshCity.charAt(0).toUpperCase() + refreshCity.slice(1)
+              localStorage.setItem('currentCity', formattedCity)
+              window.dispatchEvent(new CustomEvent('cityChanged', { detail: { city: formattedCity } }))
+            }
+            
+            setRefreshing(false)
+            clearInterval(pollInterval)
+            
+            // clear status after 5 seconds
+            setTimeout(() => {
+              setRefreshStatus('')
+              setRefreshJobId(null)
+            }, 5000)
+            
+            // trigger properties refresh
+            window.dispatchEvent(new CustomEvent('refreshCompleted'))
+            
+          } else if (job.status === 'failed') {
+            setRefreshStatus(`Błąd: ${job.error || 'Nieznany błąd'}`)
+            setRefreshing(false)
+            clearInterval(pollInterval)
+            
+            // clear status after 10 seconds
+            setTimeout(() => {
+              setRefreshStatus('')
+              setRefreshJobId(null)
+            }, 10000)
+          }
+        }
+      } catch (error) {
+        console.error('Error polling status:', error)
+        setRefreshStatus('Błąd podczas sprawdzania statusu')
+        setRefreshing(false)
+        clearInterval(pollInterval)
+        
+        setTimeout(() => {
+          setRefreshStatus('')
+          setRefreshJobId(null)
+        }, 5000)
+      }
+    }, 2000) // poll every 2 seconds
+
+    // cleanup if component unmounts
+    return () => clearInterval(pollInterval)
   }
 
   const formatLastRefresh = (date: Date | null) => {
@@ -276,6 +376,15 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="text-muted-foreground">{formatLastRefresh(lastRefresh)}</div>
               </div>
             </div>
+
+            {/* Status Display */}
+            {refreshStatus && (
+              <div className="p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  {refreshStatus}
+                </p>
+              </div>
+            )}
 
             {/* City Input */}
             <div>

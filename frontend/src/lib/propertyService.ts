@@ -43,5 +43,36 @@ export const propertyService = {
       console.error('Error fetching properties:', error)
       throw error
     }
+  },
+
+  async startRefresh(city: string, sites: string[], sitePages: Record<string, string>): Promise<{ success: boolean, jobId?: string, message?: string, error?: string }> {
+    try {
+      const response = await api.post('/refresh', {
+        city: city.trim(),
+        sites,
+        sitePages
+      })
+      
+      return response.data
+    } catch (error: any) {
+      console.error('Error starting refresh:', error)
+      if (error.response?.data) {
+        return { success: false, error: error.response.data.error || 'Failed to start refresh' }
+      }
+      return { success: false, error: 'Network error' }
+    }
+  },
+
+  async getRefreshStatus(jobId: string): Promise<{ success: boolean, job?: any, error?: string }> {
+    try {
+      const response = await api.get(`/refresh/${jobId}`)
+      return response.data
+    } catch (error: any) {
+      console.error('Error fetching refresh status:', error)
+      if (error.response?.data) {
+        return { success: false, error: error.response.data.error || 'Failed to get status' }
+      }
+      return { success: false, error: 'Network error' }
+    }
   }
 }

@@ -4,6 +4,7 @@ import sqlite3 from 'sqlite3';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
+import { randomUUID } from 'crypto';
 
 const app = express();
 const PORT = 8000;
@@ -373,6 +374,21 @@ app.delete('/api/properties/:id', (req, res) => {
   });
 });
 
+// delete all properties
+app.delete('/api/properties', (req, res) => {
+  db.run('DELETE FROM properties', function(err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    res.json({ 
+      message: `Deleted all ${this.changes} properties from database`,
+      deletedCount: this.changes
+    });
+  });
+});
+
 // delete properties by city
 app.delete('/api/properties/city/:city', (req, res) => {
   const { city } = req.params;
@@ -498,6 +514,200 @@ app.put('/api/scraping-jobs/:id', [
     res.json({ message: 'Scraping job updated successfully' });
   });
 });
+
+// refresh/scraping endpoint
+app.post('/api/refresh', [
+  body('city').notEmpty().withMessage('City is required'),
+  body('sites').isArray().withMessage('Sites must be an array'),
+  body('sites.*').isIn(['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom']).withMessage('Invalid site'),
+], async (req: Request, res: Response) => {
+  try {
+    // validate request
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: errors.array() 
+      });
+    }
+
+    const { city, sites, sitePages = {} } = req.body;
+    
+    // create a unique job id
+    const jobId = randomUUID();
+    
+    // insert job into database
+    const insertJob = `
+      INSERT INTO scraping_jobs (id, city, status, progress, total_found, started_at)
+      VALUES (?, ?, 'running', 0, 0, CURRENT_TIMESTAMP)
+    `;
+    
+    db.run(insertJob, [jobId, city], function(err) {
+      if (err) {
+        console.error('Error creating scraping job:', err.message);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Failed to create scraping job' 
+        });
+      }
+    });
+
+    // return job id immediately (async processing)
+    res.json({ 
+      success: true, 
+      jobId,
+      message: 'Scraping job started',
+      sites: sites.length,
+      city 
+    });
+
+    // run scraping asynchronously
+    runScrapingJob(jobId, city, sites, sitePages);
+
+  } catch (error) {
+    console.error('Error in refresh endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+});
+
+// get scraping job status
+app.get('/api/refresh/:jobId', (req: Request, res: Response) => {
+  const { jobId } = req.params;
+  
+  const query = 'SELECT * FROM scraping_jobs WHERE id = ?';
+  db.get(query, [jobId], (err, row: any) => {
+    if (err) {
+      console.error('Error fetching job status:', err.message);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch job status' 
+      });
+    }
+    
+    if (!row) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Job not found' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      job: {
+        id: row.id,
+        city: row.city,
+        status: row.status,
+        progress: row.progress,
+        totalFound: row.total_found,
+        startedAt: row.started_at,
+        completedAt: row.completed_at,
+        error: row.error
+      }
+    });
+  });
+});
+
+// helper function to run scraping job
+async function runScrapingJob(jobId: string, city: string, sites: string[], sitePages: Record<string, string>) {
+  console.log(`Starting scraping job ${jobId} for city: ${city}, sites: ${sites.join(', ')}`);
+  
+  const { spawn } = require('child_process');
+  const path = require('path');
+  
+  let totalProcessed = 0;
+  let totalFound = 0;
+  const totalSites = sites.length;
+  
+  // update job progress function
+  const updateProgress = (progress: number, found: number, status: string, error?: string) => {
+    const updateQuery = `
+      UPDATE scraping_jobs 
+      SET progress = ?, total_found = ?, status = ?, error = ?,
+          completed_at = CASE WHEN status = 'completed' OR status = 'failed' THEN CURRENT_TIMESTAMP ELSE completed_at END
+      WHERE id = ?
+    `;
+    db.run(updateQuery, [progress, found, status, error || null, jobId], (err) => {
+      if (err) console.error('Error updating job progress:', err.message);
+    });
+  };
+
+  try {
+    for (const site of sites) {
+      console.log(`Processing site: ${site} for job ${jobId}`);
+      
+      // determine config file
+      const configFile = path.join(__dirname, 'cfg', `${site}.json`);
+      
+      // determine max pages
+      const maxPages = sitePages[site] && sitePages[site] !== 'all' ? sitePages[site] : 'all';
+      
+      // prepare python command
+      const pythonArgs = [
+        path.join(__dirname, 'scraper_new.py'),
+        configFile,
+        city.toLowerCase()
+      ];
+      
+      if (maxPages !== 'all') {
+        pythonArgs.push(maxPages);
+      }
+      
+      // run python scraper
+      const pythonProcess = spawn('python', pythonArgs);
+      
+      let output = '';
+      let errorOutput = '';
+      
+      pythonProcess.stdout.on('data', (data: Buffer) => {
+        output += data.toString();
+        console.log(`[${site}] ${data.toString().trim()}`);
+      });
+      
+      pythonProcess.stderr.on('data', (data: Buffer) => {
+        errorOutput += data.toString();
+        console.error(`[${site}] Error: ${data.toString().trim()}`);
+      });
+      
+      // wait for process to complete
+      await new Promise((resolve, reject) => {
+        pythonProcess.on('close', (code: number) => {
+          totalProcessed++;
+          const progress = Math.round((totalProcessed / totalSites) * 100);
+          
+          if (code === 0) {
+            // extract found count from output (if available)
+            const foundMatch = output.match(/found: (\d+)/);
+            const found = foundMatch ? parseInt(foundMatch[1]) : 0;
+            totalFound += found;
+            
+            console.log(`[${site}] Completed successfully. Found: ${found}`);
+            updateProgress(progress, totalFound, totalProcessed === totalSites ? 'completed' : 'running');
+            resolve(code);
+          } else {
+            console.error(`[${site}] Failed with exit code: ${code}`);
+            const error = `Site ${site} failed: ${errorOutput || 'Unknown error'}`;
+            updateProgress(progress, totalFound, 'failed', error);
+            reject(new Error(error));
+          }
+        });
+        
+        pythonProcess.on('error', (err: Error) => {
+          console.error(`[${site}] Process error:`, err);
+          reject(err);
+        });
+      });
+    }
+    
+    console.log(`Scraping job ${jobId} completed. Total found: ${totalFound}`);
+    
+  } catch (error) {
+    console.error(`Scraping job ${jobId} failed:`, error);
+    updateProgress(100, totalFound, 'failed', error instanceof Error ? error.message : 'Unknown error');
+  }
+}
 
 // health
 app.get('/health', (req, res) => {
