@@ -202,15 +202,15 @@ class PropertyScraper:
             self.browser_manager.navigate_to_url(url, site_name=config.get("site_name", ""))
             
             # check if we got redirected before waiting for elements
-            if config.get("site_name") == "otodom" and page_num > 1:
+            if (config.get("site_name") in ["otodom", "gethome"]) and page_num > 1:
                 actual_url = self.browser_manager.get_current_url()
-                print(f"scrape_page: otodom page {page_num} - requested: {url}")
-                print(f"scrape_page: otodom page {page_num} - actual: {actual_url}")
+                print(f"scrape_page: {config.get('site_name')} page {page_num} - requested: {url}")
+                print(f"scrape_page: {config.get('site_name')} page {page_num} - actual: {actual_url}")
                 
                 # check if we were redirected to a different page
                 if (f"page={page_num}" not in actual_url and 
                     ("page=1" in actual_url or not "page=" in actual_url)):
-                    print(f"scrape_page: otodom redirect detected on page {page_num}, returning empty")
+                    print(f"scrape_page: {config.get('site_name')} redirect detected on page {page_num}, returning empty")
                     return []
             
             wait_config = config["selectors"]["wait_element"]
