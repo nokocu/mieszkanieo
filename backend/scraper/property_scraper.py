@@ -171,6 +171,12 @@ class PropertyScraper:
         
         if not self.wait_for_content_loaded():
             return config["default_pages"], None
+        
+        # olx delay for thumbnail loading  
+        if config.get("site_name") == "olx":
+            olx_delay = config.get("thumbnail_delay", 2)
+            print(f"get_total_pages: thumbnail delay {olx_delay}s", flush=True)
+            time.sleep(olx_delay)
             
         soup = BeautifulSoup(self.browser_manager.get_page_source(), "html.parser")
         
@@ -261,6 +267,12 @@ class PropertyScraper:
             
             if not self.wait_for_content_loaded():
                 return []
+            
+            # OLX-specific delay for thumbnail loading
+            if config.get("site_name") == "olx":
+                olx_delay = config.get("thumbnail_delay", 2)
+                print(f"scrape_page: OLX thumbnail delay {olx_delay}s", flush=True)
+                time.sleep(olx_delay)
                 
             soup = BeautifulSoup(self.browser_manager.get_page_source(), "html.parser")
         else:

@@ -4,8 +4,7 @@
     "base_domain": "https://nieruchomosci-online.pl",
     "base_url": "https://nieruchomosci-online.pl/szukaj.html?3,mieszkanie,wynajem,,{city}&o=price,asc&p=1",
     "page_url": "https://nieruchomosci-online.pl/szukaj.html?3,mieszkanie,wynajem,,{city}&o=price,asc&p={page}",
-    "default_pages": 50,
-    "delay_between_pages": 2,
+    "default_pages": 999,
     "has_pagination": false,
     
     "processing_rules": {

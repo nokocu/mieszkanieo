@@ -29,19 +29,10 @@ def main():
         except ValueError:
             max_pages = None
     
-    # handle config file path - check both old and new locations
-    config_path = config_file
-    if not os.path.exists(config_path):
-        # Try in scraper/cfg folder
-        config_path = os.path.join("scraper", config_file)
-    if not os.path.exists(config_path):
-        # Try with cfg/ prefix in scraper folder
-        config_path = os.path.join("scraper", "cfg", os.path.basename(config_file))
-    
-    print(f"scraper_entry: config={config_path}, city={city}, job_id={job_id}, max_pages={max_pages}", flush=True)
+    print(f"scraper_entry: config={config_file}, city={city}, job_id={job_id}, max_pages={max_pages}", flush=True)
     
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(config_file, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
         print(f"scraper_entry: loaded config for {config.get('name', 'unknown')}", flush=True)

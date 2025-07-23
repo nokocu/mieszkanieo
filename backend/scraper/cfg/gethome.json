@@ -5,7 +5,6 @@
     "base_url": "https://gethome.pl/mieszkania/do-wynajecia/{city}/?sort=price&page=1",
     "page_url": "https://gethome.pl/mieszkania/do-wynajecia/{city}/?sort=price&page={page}",
     "default_pages": 5,
-    "delay_between_pages": 3,
     "has_pagination": true,
     
     "selectors": {

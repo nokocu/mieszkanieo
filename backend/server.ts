@@ -717,8 +717,7 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
             totalFound += found;
             
             console.log(`[${site}] Completed successfully. Found: ${found}`);
-            const statusMessage = `Site ${site} completed. Found ${found} properties.`;
-            updateProgress(progress, totalFound, totalProcessed === totalSites ? 'completed' : 'running', statusMessage);
+            updateProgress(progress, totalFound, totalProcessed === totalSites ? 'completed' : 'running');
             resolve(code);
           } else {
             console.error(`[${site}] Failed with exit code: ${code}`);
@@ -736,7 +735,7 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
     }
     
     console.log(`Scraping job ${jobId} completed. Total found: ${totalFound}`);
-    updateProgress(100, totalFound, 'completed', `Scraping completed. Total found: ${totalFound} properties.`);
+    updateProgress(100, totalFound, 'completed', `Zakończono. Łącznie znaleziono: ${totalFound} ogłoszeń.`);
     
   } catch (error) {
     console.error(`Scraping job ${jobId} failed:`, error);

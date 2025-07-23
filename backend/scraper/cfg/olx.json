@@ -5,7 +5,7 @@
     "base_url": "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/{city}/?search[order]=filter_float_price:asc&view=grid&page=1",
     "page_url": "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/{city}/?search[order]=filter_float_price:asc&view=grid&page={page}",
     "default_pages": 10,
-    "delay_between_pages": 3,
+    "thumbnail_delay": 1,
     "has_pagination": true,
     
     "processing_rules": {

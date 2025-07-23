@@ -6,7 +6,6 @@
   "page_url": "https://allegro.pl/kategoria/mieszkania-do-wynajecia-112745?order=p&city={city}&p={page}",
   "has_pagination": true,
   "default_pages": 10,
-  "delay_between_pages": 3,
   
   "selectors": {
     "wait_element": {
