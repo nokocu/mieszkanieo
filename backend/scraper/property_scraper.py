@@ -7,6 +7,7 @@ import json
 import uuid
 from bs4 import BeautifulSoup
 from unidecode import unidecode
+from selenium.webdriver.support.ui import WebDriverWait
 
 from .browser_manager import BrowserManager
 from .location_mapper import LocationMapper
@@ -47,6 +48,31 @@ class PropertyScraper:
                 print(f"Failed to update job status: {e}")
         else:
             print(f"DEBUG: No job_id, cannot send status: '{message}'")
+    
+    def wait_for_content_loaded(self, timeout=10):
+        """Wait for page content to be fully loaded"""
+        if not self.driver:
+            return False
+        try:
+            # wait for document ready state
+            WebDriverWait(self.driver, timeout).until(
+                lambda driver: driver.execute_script("return document.readyState") == "complete"
+            )
+            # additional wait for AJAX
+            WebDriverWait(self.driver, timeout).until(
+                lambda driver: driver.execute_script("return jQuery.active == 0") if 
+                driver.execute_script("return typeof jQuery !== 'undefined'") else True
+            )
+            return True
+        except:
+            # )fallback) just wait for document ready
+            try:
+                WebDriverWait(self.driver, timeout).until(
+                    lambda driver: driver.execute_script("return document.readyState") == "complete"
+                )
+                return True
+            except:
+                return False
     
     def cleanup(self):
         """Close browser"""
@@ -143,7 +169,9 @@ class PropertyScraper:
         if not self.wait_for_page(wait_config["value"], wait_config["type"]):
             return config["default_pages"], None
         
-        time.sleep(2)
+        if not self.wait_for_content_loaded():
+            return config["default_pages"], None
+            
         soup = BeautifulSoup(self.browser_manager.get_page_source(), "html.parser")
         
         # find pagination
@@ -210,7 +238,7 @@ class PropertyScraper:
             else:
                 url = config["page_url"].format(city=unidecode(city).lower(), page=page_num)
             
-            print(f"scrape_page: scraping page {page_num}: {url}")
+            print(f"scrape_page: scraping page {page_num}: {url}", flush=True)
             
             self.browser_manager.navigate_to_url(url, site_name=config.get("site_name", ""))
             
@@ -231,11 +259,12 @@ class PropertyScraper:
             if not self.wait_for_page(wait_config["value"], wait_config["type"]):
                 return []
             
-            # wait longer for dynamic content
-            time.sleep(5)
+            if not self.wait_for_content_loaded():
+                return []
+                
             soup = BeautifulSoup(self.browser_manager.get_page_source(), "html.parser")
         else:
-            print(f"scrape_page: using preloaded page {page_num}")
+            print(f"scrape_page: using preloaded page {page_num}", flush=True)
             soup = preloaded_soup
         
         # find listings container
@@ -261,7 +290,7 @@ class PropertyScraper:
         # find individual listings
         listings = self.find_listings_with_strategy(container, config)
         
-        print(f"scrape_page: found {len(listings)} listings")
+        print(f"scrape_page: found {len(listings)} listings", flush=True)
         
         properties = []
         for listing in listings:
@@ -269,33 +298,35 @@ class PropertyScraper:
             if prop:
                 properties.append(prop)
         
-        print(f"scrape_page: extracted {len(properties)} properties from page")
+        print(f"scrape_page: extracted {len(properties)} properties from page", flush=True)
         return properties
     
     def scrape_site(self, city, config, max_pages=None):
         """Scrape entire site"""
-        print(f"scrape_site: starting {config['name']} scraping for {city}")
+        print(f"scrape_site: starting {config['name']} scraping for {city}", flush=True)
         
         try:
             # update status: initializing browser
             self.send_status("Inicjalizacja Chrome")
             self.setup_browser()
             
-            # update status: navigating to site
+            # update status: starting to scrape
             site_name = config.get('name', 'portal')
-            self.send_status(f"Nawiguję do {site_name}")
+            self.send_status(f"Zbieranie ogłoszeń z {site_name}")
             
             # get page count and potentially preloaded first page
             if config.get("has_pagination", True):
                 total_pages, first_page_soup = self.get_total_pages(city, config)
                 if max_pages:
                     total_pages = min(total_pages, max_pages)
-                print(f"scrape_site: will scrape {total_pages} pages")
+                print(f"scrape_site: will scrape {total_pages} pages", flush=True)
+                self.send_status(f"Zbieranie ogłoszeń z {site_name} (znaleziono {total_pages} stron)")
             else:
                 # for sites without pagination, use default or max_pages
                 total_pages = max_pages if max_pages else config.get("default_pages", 999)
                 first_page_soup = None
-                print(f"scrape_site: will scrape until empty pages (max {total_pages} pages)")
+                print(f"scrape_site: will scrape until empty pages (max {total_pages} pages)", flush=True)
+                self.send_status(f"Zbieranie ogłoszeń z {site_name}")
             
             all_properties = []
             saved_count = 0
@@ -316,22 +347,23 @@ class PropertyScraper:
                 
                 # use preloaded soup for page 1 if available
                 if page == 1 and first_page_soup is not None:
+                    print(f"scrape_page: processing preloaded page 1", flush=True)
                     properties = self.scrape_page(city, page, config, first_page_soup)
                 else:
                     properties = self.scrape_page(city, page, config)
                 
                 if not properties:
                     empty_pages_count += 1
-                    print(f"scrape_site: page {page} is empty ({empty_pages_count} empty pages in a row)")
+                    print(f"scrape_site: page {page} is empty ({empty_pages_count} empty pages in a row)", flush=True)
                     
                     # for sites without pagination, stop after 2 consecutive empty pages
                     if not config.get("has_pagination", True) and empty_pages_count >= 2:
-                        print("scrape_site: stopping due to consecutive empty pages")
+                        print("scrape_site: stopping due to consecutive empty pages", flush=True)
                         break
                     
                     # for sites with pagination, stop after 1 empty page
                     if config.get("has_pagination", True):
-                        print("scrape_site: stopping due to empty page on paginated site")
+                        print("scrape_site: stopping due to empty page on paginated site", flush=True)
                         break
                 else:
                     empty_pages_count = 0  # reset counter when we find properties
@@ -342,17 +374,15 @@ class PropertyScraper:
                 if properties:
                     saved_count += self.save_properties_batch(properties)
                 
-                print(f"scrape_site:page {page} done: {len(properties)} properties")
+                print(f"scrape_site:page {page} done: {len(properties)} properties", flush=True)
                 
                 if page < total_pages:
-                    time.sleep(config.get("delay_between_pages", 3))
+                    time.sleep(0.5)
             
             # final completion status
-            self.send_status("Zakończono pomyślnie")
+            self.send_status(f"Zapisywanie wyników z {site_name}")
             if self.job_id:
                 self.update_job(self.job_id, {
-                    "status": "completed",
-                    "progress": 100,
                     "total_found": len(all_properties)
                 })
             

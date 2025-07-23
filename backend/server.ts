@@ -681,7 +681,7 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
       
       // run python scraper
       const pythonPath = path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe');
-      const pythonProcess = spawn(pythonPath, pythonArgs);
+      const pythonProcess = spawn(pythonPath, ['-u', ...pythonArgs]);
       
       let output = '';
       let errorOutput = '';

@@ -27,7 +27,7 @@ class LocationMapper:
                     city = row['miasto'].strip().lower()
                     path = row['link'].strip()
                     self.location_mapping[city] = path
-            print(f"Loaded {len(self.location_mapping)} location mappings")
+            print(f"Loaded {len(self.location_mapping)} location mappings", flush=True)
         except Exception as e:
             print(f"Error loading location mapping: {e}")
     

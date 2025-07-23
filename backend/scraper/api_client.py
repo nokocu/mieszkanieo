@@ -48,7 +48,7 @@ class APIClient:
             
             if response.status_code == 200:
                 result = response.json()
-                print(f"save_properties_batch: saved {result.get('saved', 0)}, skipped {result.get('skipped', 0)}")
+                print(f"save_properties_batch: saved {result.get('saved', 0)}, skipped {result.get('skipped', 0)}", flush=True)
                 return result.get('saved', 0)
             else:
                 print(f"save_properties_batch: api error {response.status_code}: {response.text}")

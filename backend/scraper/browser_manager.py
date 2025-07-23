@@ -38,7 +38,9 @@ class BrowserManager:
         })
         self.driver.get('chrome://settings/')
         self.driver.execute_script('chrome.settingsPrivate.setDefaultZoom(0.25);')
-        time.sleep(0.5)
+        WebDriverWait(self.driver, 3).until(
+            lambda driver: driver.execute_script("return document.readyState") == "complete"
+        )
     
     def wait_for_page(self, selector: str, selector_type: str = "css", timeout: int = 10) -> bool:
         """Wait for page to load"""
@@ -59,7 +61,7 @@ class BrowserManager:
             print("wait_for_page: timeout waiting for page element")
             return False
     
-    def scroll_to_bottom(self, wait_time: float = 2.0) -> None:
+    def scroll_to_bottom(self, wait_time: float = 1.0) -> None:
         """Scroll to bottom of page to trigger lazy loading"""
         if not self.driver:
             return
@@ -72,8 +74,9 @@ class BrowserManager:
                 # scroll to bottom
                 self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 
-                # wait for new content to load
-                time.sleep(wait_time)
+                WebDriverWait(self.driver, wait_time).until(
+                    lambda driver: driver.execute_script("return document.readyState") == "complete"
+                )
                 
                 # Calculate new page height
                 new_height = self.driver.execute_script("return document.body.scrollHeight")
