@@ -105,7 +105,7 @@ app.get('/api/properties', (req, res) => {
   const params: any[] = [];
 
   // filter by sites
-  if (sites) {
+  if (sites !== undefined) {
     const siteArray = Array.isArray(sites) ? sites : [sites];
     const validSites = siteArray.filter(site => 
       ['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'].includes(site as string)
@@ -114,6 +114,9 @@ app.get('/api/properties', (req, res) => {
       const placeholders = validSites.map(() => '?').join(',');
       query += ` AND site IN (${placeholders})`;
       params.push(...validSites);
+    } else {
+      // no valid sites selected: return empty
+      query += ` AND 1=0`;
     }
   }
 
@@ -129,31 +132,31 @@ app.get('/api/properties', (req, res) => {
 
   // filter by area range
   if (area_min) {
-    query += ' AND area >= ?';
+    query += ' AND (area >= ? OR area IS NULL)';
     params.push(parseInt(area_min as string));
   }
   if (area_max) {
-    query += ' AND area <= ?';
+    query += ' AND (area <= ? OR area IS NULL)';
     params.push(parseInt(area_max as string));
   }
 
   // filter by rooms range
   if (rooms_min) {
-    query += ' AND rooms >= ?';
+    query += ' AND (rooms >= ? OR rooms IS NULL)';
     params.push(parseInt(rooms_min as string));
   }
   if (rooms_max) {
-    query += ' AND rooms <= ?';
+    query += ' AND (rooms <= ? OR rooms IS NULL)';
     params.push(parseInt(rooms_max as string));
   }
 
   // filter by level range
   if (level_min) {
-    query += ' AND level >= ?';
+    query += ' AND (level >= ? OR level IS NULL)';
     params.push(parseInt(level_min as string));
   }
   if (level_max) {
-    query += ' AND level <= ?';
+    query += ' AND (level <= ? OR level IS NULL)';
     params.push(parseInt(level_max as string));
   }
 
