@@ -14,12 +14,20 @@ def main():
     print("scraper_entry: starting")
     
     if len(sys.argv) < 2:
-        print("usage: python scraper_entry.py <config_file> [city] [max_pages]")
+        print("usage: python scraper_entry.py <config_file> [city] [job_id] [max_pages]")
         return
     
     config_file = sys.argv[1]
     city = sys.argv[2] if len(sys.argv) > 2 else "katowice"
-    max_pages = int(sys.argv[3]) if len(sys.argv) > 3 else None
+    job_id = sys.argv[3] if len(sys.argv) > 3 else None
+    
+    # handle max_pages
+    max_pages = None
+    if len(sys.argv) > 4:
+        try:
+            max_pages = int(sys.argv[4])
+        except ValueError:
+            max_pages = None
     
     # handle config file path - check both old and new locations
     config_path = config_file
@@ -30,7 +38,7 @@ def main():
         # Try with cfg/ prefix in scraper folder
         config_path = os.path.join("scraper", "cfg", os.path.basename(config_file))
     
-    print(f"scraper_entry: config={config_path}, city={city}, max_pages={max_pages}")
+    print(f"scraper_entry: config={config_path}, city={city}, job_id={job_id}, max_pages={max_pages}")
     
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
@@ -38,7 +46,7 @@ def main():
         
         print(f"scraper_entry: loaded config for {config.get('name', 'unknown')}")
         
-        scraper = PropertyScraper(headless=True)
+        scraper = PropertyScraper(headless=True, job_id=job_id)
         result = scraper.scrape_site(city, config, max_pages)
         
         if result["success"]:

@@ -159,8 +159,12 @@ export function Navbar() {
           
           // update toast with progress
           if (job.status === 'running') {
-            toast.loading(`Pozyskiwanie ogłoszeń... ${job.progress}% (${job.totalFound} znalezionych)`, {
-              id: "scraping-status"
+            const statusMessage = job.currentStatus || `Pozyskiwanie ogłoszeń... ${job.progress}%`
+            const foundMessage = `${job.totalFound} znalezionych`
+            
+            toast.loading(statusMessage, {
+              id: "scraping-status",
+              description: foundMessage
             })
           } else if (job.status === 'completed') {
             const now = new Date()

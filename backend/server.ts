@@ -62,6 +62,7 @@ function createTables() {
       city TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
       progress INTEGER DEFAULT 0,
+      current_status TEXT,
       started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       completed_at DATETIME,
       total_found INTEGER DEFAULT 0,
@@ -474,6 +475,7 @@ app.put('/api/scraping-jobs/:id', [
   body('status').optional().isString().trim().isIn(['pending', 'running', 'completed', 'failed']),
   body('progress').optional().isInt({ min: 0, max: 100 }),
   body('total_found').optional().isInt({ min: 0 }),
+  body('current_status').optional().isString().trim(),
   body('error').optional().isString().trim()
 ], (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -497,7 +499,7 @@ app.put('/api/scraping-jobs/:id', [
     setClause += ', completed_at = CURRENT_TIMESTAMP';
   }
   
-  const query = `UPDATE scraping_jobs SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+  const query = `UPDATE scraping_jobs SET ${setClause} WHERE id = ?`;
   values.push(id);
   
   db.run(query, values, function(err) {
@@ -602,6 +604,7 @@ app.get('/api/refresh/:jobId', (req: Request, res: Response) => {
         status: row.status,
         progress: row.progress,
         totalFound: row.total_found,
+        currentStatus: row.current_status,
         startedAt: row.started_at,
         completedAt: row.completed_at,
         error: row.error
@@ -622,14 +625,14 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
   const totalSites = sites.length;
   
   // update job progress function
-  const updateProgress = (progress: number, found: number, status: string, error?: string) => {
+  const updateProgress = (progress: number, found: number, status: string, currentStatus?: string, error?: string) => {
     const updateQuery = `
       UPDATE scraping_jobs 
-      SET progress = ?, total_found = ?, status = ?, error = ?,
+      SET progress = ?, total_found = ?, status = ?, current_status = ?, error = ?,
           completed_at = CASE WHEN status = 'completed' OR status = 'failed' THEN CURRENT_TIMESTAMP ELSE completed_at END
       WHERE id = ?
     `;
-    db.run(updateQuery, [progress, found, status, error || null, jobId], (err) => {
+    db.run(updateQuery, [progress, found, status, currentStatus || null, error || null, jobId], (err) => {
       if (err) console.error('Error updating job progress:', err.message);
     });
   };
@@ -668,7 +671,8 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
       const pythonArgs = [
         path.join(__dirname, 'scraper_entry.py'),
         configFile,
-        city.toLowerCase()
+        city.toLowerCase(),
+        jobId  // pass job ID for status updates
       ];
       
       if (maxPages !== 'all') {
@@ -676,14 +680,23 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
       }
       
       // run python scraper
-      const pythonProcess = spawn('python', pythonArgs);
+      const pythonPath = path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe');
+      const pythonProcess = spawn(pythonPath, pythonArgs);
       
       let output = '';
       let errorOutput = '';
       
       pythonProcess.stdout.on('data', (data: Buffer) => {
-        output += data.toString();
-        console.log(`[${site}] ${data.toString().trim()}`);
+        const output_line = data.toString().trim();
+        output += output_line + '\n';
+        console.log(`[${site}] ${output_line}`);
+        
+        // parse status updates from python
+        if (output_line.startsWith('STATUS:')) {
+          const statusMessage = output_line.replace('STATUS:', '').trim();
+          const currentProgress = Math.round(((totalProcessed / totalSites) + (1 / totalSites) * 0.5) * 100);
+          updateProgress(currentProgress, totalFound, 'running', statusMessage);
+        }
       });
       
       pythonProcess.stderr.on('data', (data: Buffer) => {
@@ -704,12 +717,13 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
             totalFound += found;
             
             console.log(`[${site}] Completed successfully. Found: ${found}`);
-            updateProgress(progress, totalFound, totalProcessed === totalSites ? 'completed' : 'running');
+            const statusMessage = `Site ${site} completed. Found ${found} properties.`;
+            updateProgress(progress, totalFound, totalProcessed === totalSites ? 'completed' : 'running', statusMessage);
             resolve(code);
           } else {
             console.error(`[${site}] Failed with exit code: ${code}`);
             const error = `Site ${site} failed: ${errorOutput || 'Unknown error'}`;
-            updateProgress(progress, totalFound, 'failed', error);
+            updateProgress(progress, totalFound, 'failed', undefined, error);
             reject(new Error(error));
           }
         });
@@ -722,11 +736,11 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
     }
     
     console.log(`Scraping job ${jobId} completed. Total found: ${totalFound}`);
-    updateProgress(100, totalFound, 'completed');
+    updateProgress(100, totalFound, 'completed', `Scraping completed. Total found: ${totalFound} properties.`);
     
   } catch (error) {
     console.error(`Scraping job ${jobId} failed:`, error);
-    updateProgress(100, totalFound, 'failed', error instanceof Error ? error.message : 'Unknown error');
+    updateProgress(100, totalFound, 'failed', undefined, error instanceof Error ? error.message : 'Unknown error');
   }
 }
 

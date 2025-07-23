@@ -35,6 +35,7 @@ export interface ScrapingJob {
   city: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
   progress: number;
+  currentStatus?: string;
   startedAt: Date;
   completedAt?: Date;
   totalFound: number;

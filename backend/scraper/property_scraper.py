@@ -17,9 +17,10 @@ from .api_client import APIClient
 class PropertyScraper:
     """Scrapes properties"""
     
-    def __init__(self, headless=True, api_url="http://localhost:8000"):
+    def __init__(self, headless=True, api_url="http://localhost:8000", job_id=None):
         self.headless = headless
         self.api_url = api_url
+        self.job_id = job_id
         
         # init
         self.browser_manager = BrowserManager(headless)
@@ -28,11 +29,24 @@ class PropertyScraper:
         self.api_client = APIClient(api_url)
         self.driver = None
         self.location_mapping = {}
-    
     def setup_browser(self, fresh_instance=False):
         """Start chrome browser"""
         self.browser_manager.setup_browser(fresh_instance)
         self.driver = self.browser_manager.driver
+    
+    def send_status(self, message):
+        """Send status update to API"""
+        if self.job_id:
+            try:
+                print(f"DEBUG: Sending status update: '{message}' for job {self.job_id}")
+                self.api_client.update_job(self.job_id, {
+                    "current_status": message
+                })
+                print(f"DEBUG: Status update sent successfully")
+            except Exception as e:
+                print(f"Failed to update job status: {e}")
+        else:
+            print(f"DEBUG: No job_id, cannot send status: '{message}'")
     
     def cleanup(self):
         """Close browser"""
@@ -110,15 +124,14 @@ class PropertyScraper:
     
     def get_total_pages(self, city, config):
         """Get number of pages to scrape and return page content if available"""
-        # if the site doesnt have pagination, return a high number (will stop when it finds empty pages)
         if not config.get("has_pagination", True):
-            return config.get("default_pages", 50), None
+            return config.get("default_pages", 999), None
             
         # handle CSV-based location mapping
         if config.get("use_csv_location"):
             city_path = self.get_city_url_path(city, config)
             if city_path is None:
-                return config.get("default_pages", 50), None
+                return config.get("default_pages", 999), None
             
             url = config["base_url"].format(city_path=city_path)
         else:
@@ -263,11 +276,14 @@ class PropertyScraper:
         """Scrape entire site"""
         print(f"scrape_site: starting {config['name']} scraping for {city}")
         
-        job_id = str(uuid.uuid4())[:8]
-        self.create_job(job_id, city)
-        
         try:
+            # update status: initializing browser
+            self.send_status("Inicjalizacja Chrome")
             self.setup_browser()
+            
+            # update status: navigating to site
+            site_name = config.get('name', 'portal')
+            self.send_status(f"Nawiguję do {site_name}")
             
             # get page count and potentially preloaded first page
             if config.get("has_pagination", True):
@@ -277,7 +293,7 @@ class PropertyScraper:
                 print(f"scrape_site: will scrape {total_pages} pages")
             else:
                 # for sites without pagination, use default or max_pages
-                total_pages = max_pages if max_pages else config.get("default_pages", 50)
+                total_pages = max_pages if max_pages else config.get("default_pages", 999)
                 first_page_soup = None
                 print(f"scrape_site: will scrape until empty pages (max {total_pages} pages)")
             
@@ -287,7 +303,16 @@ class PropertyScraper:
             
             for page in range(1, total_pages + 1):
                 progress = int((page - 1) / total_pages * 100)
-                self.update_job(job_id, {"progress": progress})
+                
+                # update detailed status with current page
+                if total_pages == 999:
+                    # dont show for sites without pagination 
+                    self.send_status(f"Zbieranie ogłoszeń z {site_name}, strona {page}")
+                else:
+                    self.send_status(f"Zbieranie ogłoszeń z {site_name}, strona {page}/{total_pages}")
+                
+                if self.job_id:
+                    self.update_job(self.job_id, {"progress": progress})
                 
                 # use preloaded soup for page 1 if available
                 if page == 1 and first_page_soup is not None:
@@ -322,25 +347,29 @@ class PropertyScraper:
                 if page < total_pages:
                     time.sleep(config.get("delay_between_pages", 3))
             
-            self.update_job(job_id, {
-                "status": "completed",
-                "progress": 100,
-                "total_found": len(all_properties)
-            })
+            # final completion status
+            self.send_status("Zakończono pomyślnie")
+            if self.job_id:
+                self.update_job(self.job_id, {
+                    "status": "completed",
+                    "progress": 100,
+                    "total_found": len(all_properties)
+                })
             
             return {
                 "success": True,
                 "properties": all_properties,
                 "saved": saved_count,
-                "total_found": len(all_properties),
-                "job_id": job_id
+                "total_found": len(all_properties)
             }
             
         except Exception as e:
             print(f"scrape_site: error: {e}")
             import traceback
             traceback.print_exc()
-            self.update_job(job_id, {"status": "failed", "error": str(e)})
+            self.send_status(f"Błąd: {str(e)}")
+            if self.job_id:
+                self.update_job(self.job_id, {"status": "failed", "error": str(e)})
             return {"success": False, "error": str(e)}
         finally:
             self.cleanup()

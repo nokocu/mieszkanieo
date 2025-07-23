@@ -93,12 +93,16 @@ class APIClient:
     def update_job(self, job_id, updates):
         """Update scraping job"""
         try:
+            url = f"{self.api_url}/api/scraping-jobs/{job_id}"
+            print(f"DEBUG: Updating job {job_id} with {updates} at {url}")
             response = requests.put(
-                f"{self.api_url}/api/scraping-jobs/{job_id}",
+                url,
                 json=updates,
                 headers={"Content-Type": "application/json"},
                 timeout=10
             )
+            print(f"DEBUG: Job update response: {response.status_code} - {response.text}")
             return response.status_code == 200
-        except:
+        except Exception as e:
+            print(f"DEBUG: Job update failed: {e}")
             return False
