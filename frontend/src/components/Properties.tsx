@@ -8,7 +8,7 @@ import { MapPin, Building, DoorClosed, Ruler, ArrowBigUp } from 'lucide-react'
 const PropertiesShadcnRoute: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
-  
+
   // get filters from sidebar (localStorage + event listener)
   const [filters, setFilters] = useState<PropertyFilters>(() => {
     const stored = localStorage.getItem('propertyFilters')
@@ -63,7 +63,7 @@ const PropertiesShadcnRoute: React.FC = () => {
 
     window.addEventListener('filtersChanged', handleFiltersChanged as EventListener)
     window.addEventListener('refreshCompleted', handleRefreshCompleted as EventListener)
-    
+
     return () => {
       window.removeEventListener('filtersChanged', handleFiltersChanged as EventListener)
       window.removeEventListener('refreshCompleted', handleRefreshCompleted as EventListener)
@@ -106,7 +106,7 @@ const PropertiesShadcnRoute: React.FC = () => {
         {/* Site badge skeleton */}
         <div className="absolute bottom-2 left-2 w-16 h-4 bg-neutral-400 dark:bg-neutral-600 rounded animate-pulse"></div>
       </div>
-      
+
       {/* Content skeleton */}
       <div className="pl-4 pr-4 pb-4 flex flex-col">
         <div className="flex-1 min-h-0">
@@ -121,7 +121,7 @@ const PropertiesShadcnRoute: React.FC = () => {
             <div className="h-3 bg-neutral-300 dark:bg-neutral-700 rounded w-2/3 animate-pulse"></div>
           </div>
         </div>
-        
+
         <div className="flex items-center justify-between">
           {/* Price skeleton */}
           <div className="h-5 bg-neutral-300 dark:bg-neutral-700 rounded w-24 animate-pulse"></div>
@@ -174,13 +174,13 @@ const PropertiesShadcnRoute: React.FC = () => {
       {/* Properties Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-0">
         {properties.map((property) => (
-          <Card 
-            key={property.id} 
-            className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-80 p-0"
+          <Card
+            key={property.id}
+            className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-80 flex flex-col py-0 gap-0"
             onClick={() => window.open(property.link, '_blank')}
           >
             {/* Image Section */}
-            <div className="h-[70%] relative bg-muted overflow-hidden">
+            <div className="h-48 relative bg-muted overflow-hidden">
               {property.image ? (
                 <img
                   src={property.image}
@@ -192,16 +192,16 @@ const PropertiesShadcnRoute: React.FC = () => {
                   <Building className="h-12 w-12 text-muted-foreground" />
                 </div>
               )}
-              <Badge 
+              <Badge
                 className={`absolute bottom-2 left-2 ${getSiteColor(property.site)}`}
                 variant="secondary"
               >
                 {property.site}
               </Badge>
             </div>
-            
+
             {/* Content Section */}
-            <div className="pl-4 pr-4 pb-4 flex flex-col">
+            <div className="p-4 flex-1 flex flex-col justify-between">
               {/* Title and Location */}
               <div>
                 <h3 className="text-sm font-semibold leading-tight line-clamp-2 mb-1">
@@ -212,10 +212,7 @@ const PropertiesShadcnRoute: React.FC = () => {
                   <span className="truncate">{property.address}</span>
                 </div>
               </div>
-              
-              {/* Spacer to push details to bottom */}
-              <div className="flex-1"></div>
-              
+
               {/* Price and Details */}
               <div className="flex items-center justify-between">
                 <div className="text-lg font-bold text-foreground">
