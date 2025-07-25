@@ -88,9 +88,9 @@ const PropertiesShadcnRoute: React.FC = () => {
 
   const getSiteColor = (site: string) => {
     const colors: { [key: string]: string } = {
-      allegro: 'bg-orange-600',
+      allegro: 'bg-orange-500',
       gethome: 'bg-purple-400',
-      nieruchomosci: 'bg-neutral-100 text-orange-600 border-neutral-300',
+      nieruchomosci: 'bg-neutral-100 text-orange-500 border-neutral-300',
       olx: 'bg-teal-400 text-black border-neutral-700',
       otodom: 'bg-green-500 text-blue-950'
     }

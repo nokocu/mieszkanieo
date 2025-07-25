@@ -6,8 +6,8 @@ import {
 
 import { Input } from "./ui/input"
 import { Separator } from "./ui/separator"
-import { Switch } from "./ui/switch"
 import { Slider } from "./ui/slider"
+import { SiteSwitch } from "./SiteSwitch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import {
   Sidebar,
@@ -90,10 +90,11 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div className="mt-2 space-y-3">
                 {['allegro', 'gethome', 'nieruchomosci', 'olx', 'otodom'].map((site) => (
                   <div key={site} className="flex items-center space-x-2">
-                    <Switch
+                    <SiteSwitch
                       id={`filter-${site}`}
                       checked={selectedSites.includes(site)}
                       onCheckedChange={() => toggleSite(site)}
+                      site={site as "allegro" | "gethome" | "nieruchomosci" | "olx" | "otodom"}
                     />
                     <label htmlFor={`filter-${site}`} className="text-sm capitalize cursor-pointer">
                       {site}
