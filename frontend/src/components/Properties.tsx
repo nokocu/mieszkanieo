@@ -3,7 +3,7 @@ import { Property, PropertyFilters } from '../types'
 import { propertyService } from '../lib/propertyService'
 import { Card, CardContent } from "./ui/card"
 import { Badge } from "./ui/badge"
-import { 
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -17,7 +17,7 @@ import { MapPin, Building, DoorClosed, Ruler, ArrowBigUp } from 'lucide-react'
 const PropertiesShadcnRoute: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
-  
+
   // pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 80
@@ -122,7 +122,7 @@ const PropertiesShadcnRoute: React.FC = () => {
     <Pagination>
       <PaginationContent>
         <PaginationItem>
-          <PaginationPrevious 
+          <PaginationPrevious
             href="#"
             onClick={(e) => {
               e.preventDefault()
@@ -131,84 +131,107 @@ const PropertiesShadcnRoute: React.FC = () => {
             className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
           />
         </PaginationItem>
-        
-        {/* First page */}
-        {currentPage > 3 && (
-          <>
-            <PaginationItem>
-              <PaginationLink 
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  handlePageChange(1)
-                }}
-              >
-                1
-              </PaginationLink>
-            </PaginationItem>
-            {currentPage > 4 && (
-              <PaginationItem>
-                <PaginationEllipsis />
+
+        {/* Page numbers */}
+        {totalPages <= 5 ? (
+          // simple case
+          Array.from({ length: totalPages }, (_, i) => {
+            const pageNum = i + 1
+            return (
+              <PaginationItem key={pageNum}>
+                <PaginationLink
+                  href="#"
+                  isActive={pageNum === currentPage}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handlePageChange(pageNum)
+                  }}
+                >
+                  {pageNum}
+                </PaginationLink>
               </PaginationItem>
+            )
+          })
+        ) : (
+          // complex case
+          <>
+            {/* First page */}
+            {currentPage > 3 && (
+              <>
+                <PaginationItem>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handlePageChange(1)
+                    }}
+                  >
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+                {currentPage > 4 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+              </>
+            )}
+
+            {/* Page numbers around current page */}
+            {Array.from({ length: 5 }, (_, i) => {
+              let pageNum
+              if (currentPage <= 3) {
+                pageNum = i + 1
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i
+              } else {
+                pageNum = currentPage - 2 + i
+              }
+
+              if (pageNum < 1 || pageNum > totalPages) return null
+
+              return (
+                <PaginationItem key={pageNum}>
+                  <PaginationLink
+                    href="#"
+                    isActive={pageNum === currentPage}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handlePageChange(pageNum)
+                    }}
+                  >
+                    {pageNum}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            })}
+
+            {/* Last page */}
+            {currentPage < totalPages - 2 && (
+              <>
+                {currentPage < totalPages - 3 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                <PaginationItem>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handlePageChange(totalPages)
+                    }}
+                  >
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>
             )}
           </>
         )}
-        
-        {/* Page numbers around current page */}
-        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-          let pageNum
-          if (totalPages <= 5) {
-            pageNum = i + 1
-          } else if (currentPage <= 3) {
-            pageNum = i + 1
-          } else if (currentPage >= totalPages - 2) {
-            pageNum = totalPages - 4 + i
-          } else {
-            pageNum = currentPage - 2 + i
-          }
-          
-          if (pageNum < 1 || pageNum > totalPages) return null
-          
-          return (
-            <PaginationItem key={pageNum}>
-              <PaginationLink
-                href="#"
-                isActive={pageNum === currentPage}
-                onClick={(e) => {
-                  e.preventDefault()
-                  handlePageChange(pageNum)
-                }}
-              >
-                {pageNum}
-              </PaginationLink>
-            </PaginationItem>
-          )
-        })}
-        
-        {/* Last page */}
-        {currentPage < totalPages - 2 && (
-          <>
-            {currentPage < totalPages - 3 && (
-              <PaginationItem>
-                <PaginationEllipsis />
-              </PaginationItem>
-            )}
-            <PaginationItem>
-              <PaginationLink 
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  handlePageChange(totalPages)
-                }}
-              >
-                {totalPages}
-              </PaginationLink>
-            </PaginationItem>
-          </>
-        )}
-        
+
         <PaginationItem>
-          <PaginationNext 
+          <PaginationNext
             href="#"
             onClick={(e) => {
               e.preventDefault()
@@ -285,7 +308,7 @@ const PropertiesShadcnRoute: React.FC = () => {
         </div>
 
         {/* Skeleton Properties Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
           {Array.from({ length: 12 }).map((_, index) => (
             <PropertySkeleton key={index} />
           ))}
@@ -301,20 +324,20 @@ const PropertiesShadcnRoute: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Mieszkanieo</h1>
           <p className="text-muted-foreground">
-            {properties.length} ogłoszeń {totalPages > 1 && `• Strona ${currentPage} z ${totalPages}`}
+            {properties.length} ogłoszeń
           </p>
         </div>
-        
+
         {/* Top Pagination */}
         {totalPages > 1 && (
-          <div className="absolute left-1/2 transform -translate-x-1/2">
+          <div className="hidden lg:flex items-center ml-4">
             <PaginationComponent />
           </div>
         )}
       </div>
 
       {/* Properties Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 mb-6">
         {currentProperties.map((property) => (
           <Card
             key={property.id}
@@ -376,7 +399,12 @@ const PropertiesShadcnRoute: React.FC = () => {
                   {property.level !== null && property.level !== undefined && (
                     <div className="flex items-center">
                       <ArrowBigUp className="h-4 w-4 mr-1" />
-                      {property.level === 0 ? 'parter' : `${property.level} piętro`}
+                      <span className="xl:hidden 2xl:block">
+                        {property.level === 0 ? 'parter' : `${property.level} piętro`}
+                      </span>
+                      <span className="hidden xl:block 2xl:hidden">
+                        {property.level === 0 ? 'parter' : `${property.level}`}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -387,7 +415,11 @@ const PropertiesShadcnRoute: React.FC = () => {
       </div>
 
       {/* Bottom Pagination */}
-      {totalPages > 1 && <PaginationComponent />}
+      {totalPages > 1 && (
+        <div>
+          <PaginationComponent />
+        </div>
+      )}
 
       {!loading && properties.length === 0 && (
         <Card>

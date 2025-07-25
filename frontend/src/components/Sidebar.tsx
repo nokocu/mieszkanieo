@@ -46,8 +46,8 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [selectedSites, sortBy, address, priceRange, areaRange, roomsRange])
 
   const toggleSite = (site: string) => {
-    setSelectedSites(prev => 
-      prev.includes(site) 
+    setSelectedSites(prev =>
+      prev.includes(site)
         ? prev.filter(s => s !== site)
         : [...prev, site]
     )
@@ -77,14 +77,11 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         {/* FILTERING SECTION */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filtry
-          </SidebarGroupLabel>
+        <SidebarGroup className="pt-0">
+
           <Separator />
           <SidebarGroupContent className="space-y-4 p-2">
-            
+
             {/* Sites */}
             <div>
               <div className="mt-2 space-y-3">
@@ -119,7 +116,7 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <Separator />
             {/* Address Search */}
             <div>
