@@ -308,8 +308,8 @@ export function Navbar() {
             {/* Disclaimer at bottom */}
             <div className="m-2 p-3 bg-amber-50 dark:bg-amber-950/20 border rounded border-amber-200 dark:border-amber-800">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-red-700 dark:text-red-300">
                   Częste odświeżanie może prowadzić do blokad od dostawców ogłoszeń, zmniejszając liczbę wczytanych ogłoszeń przez Mieszkanieo.
                 </p>
               </div>

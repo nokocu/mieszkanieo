@@ -183,8 +183,48 @@ class PropertyScraper:
         # find pagination
         pag_config = config["selectors"]["pagination"]
         
+        # handle javascript state pagination for react sites
+        if pag_config.get("javascript_state"):
+            state_key = pag_config.get("state_key", "pageCount")
+            page_source = self.browser_manager.get_page_source()
+            
+            # extract from window.__INITIAL_STATE__
+            import re
+            import json
+            
+            # first try a simple regex to find pageCount directly
+            pagecount_match = re.search(r'"pageCount":\s*(\d+)', page_source)
+            if pagecount_match:
+                try:
+                    page_count = int(pagecount_match.group(1))
+                    print(f"get_total_pages: found {state_key}={page_count} via regex")
+                    return page_count, soup
+                except ValueError:
+                    pass
+            
+            # fallback to full JSON parsing
+            state_match = re.search(r'window\.__INITIAL_STATE__\s*=\s*({.*?});', page_source, re.DOTALL)
+            if state_match:
+                try:
+                    state_json = state_match.group(1)
+                    state_data = json.loads(state_json)
+                    
+                    # navigate through nested structure to find pageCount
+                    if "offerList" in state_data and state_data["offerList"] and "offerList" in state_data["offerList"]:
+                        offer_list_data = state_data["offerList"]["offerList"]
+                        if offer_list_data and state_key in offer_list_data:
+                            page_count = offer_list_data[state_key]
+                            print(f"get_total_pages: found {state_key}={page_count} in JavaScript state")
+                            return page_count, soup
+                except Exception as e:
+                    print(f"get_total_pages: error parsing JavaScript state: {e}")
+            
+            # fallback to default if js parsing fails
+            print(f"get_total_pages: JavaScript state parsing failed, using default pages")
+            return config["default_pages"], soup
+        
         # handle data_page attribute pagination
-        if "data_page" in pag_config:
+        elif "data_page" in pag_config:
             pages = soup.find_all(pag_config["tag"], attrs={"data-page": True})
             max_page = 0
             for page in pages:

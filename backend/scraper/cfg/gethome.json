@@ -14,9 +14,8 @@
         },
         
         "pagination": {
-            "tag": "ul",
-            "class": "gh-1wjowh8 e134q4pk1",
-            "item_tag": "li"
+            "javascript_state": true,
+            "state_key": "pageCount"
         },
         
         "listings_container": {
