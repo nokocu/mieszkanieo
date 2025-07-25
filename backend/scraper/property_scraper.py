@@ -39,15 +39,11 @@ class PropertyScraper:
         """Send status update to API"""
         if self.job_id:
             try:
-                print(f"DEBUG: Sending status update: '{message}' for job {self.job_id}")
                 self.api_client.update_job(self.job_id, {
                     "current_status": message
                 })
-                print(f"DEBUG: Status update sent successfully")
             except Exception as e:
                 print(f"Failed to update job status: {e}")
-        else:
-            print(f"DEBUG: No job_id, cannot send status: '{message}'")
     
     def wait_for_content_loaded(self, timeout=10):
         """Wait for page content to be fully loaded"""
@@ -327,16 +323,12 @@ class PropertyScraper:
             container = soup.find(container_config["tag"], class_=container_config["class"])
         
         if not container:
-            print("DEBUG: Primary container not found, trying alternative approaches...")
             # try to find any div that might contain listings
             potential_containers = soup.find_all("div", class_=lambda x: x and ("column" in " ".join(x) or "container" in " ".join(x) or "content" in " ".join(x)))
-            print(f"DEBUG: Found {len(potential_containers)} potential containers")
             if potential_containers:
                 container = potential_containers[0]
-                print(f"DEBUG: Using container with class: {container.get('class')}")
         
         if not container:
-            print("DEBUG: No container found at all")
             return []
         
         # find individual listings

@@ -272,7 +272,6 @@ class DataExtractor:
             try:
                 address = self.find_in_element(listing, selectors["address"])
             except Exception as e:
-                print(f"DEBUG: Error in find_in_element for address: {e}")
                 address = ""
         
         # if no separate address found, extract from title

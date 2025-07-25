@@ -3,11 +3,24 @@ import { Property, PropertyFilters } from '../types'
 import { propertyService } from '../lib/propertyService'
 import { Card, CardContent } from "./ui/card"
 import { Badge } from "./ui/badge"
+import { 
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "./ui/pagination"
 import { MapPin, Building, DoorClosed, Ruler, ArrowBigUp } from 'lucide-react'
 
 const PropertiesShadcnRoute: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 80
 
   // get filters from sidebar (localStorage + event listener)
   const [filters, setFilters] = useState<PropertyFilters>(() => {
@@ -85,6 +98,128 @@ const PropertiesShadcnRoute: React.FC = () => {
   useEffect(() => {
     fetchProperties()
   }, [filters])
+
+  // reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters])
+
+  // calculate pagination values
+  const totalPages = Math.ceil(properties.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const currentProperties = properties.slice(startIndex, endIndex)
+
+  // handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    // scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // reusable pagination component
+  const PaginationComponent = () => (
+    <Pagination>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious 
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              if (currentPage > 1) handlePageChange(currentPage - 1)
+            }}
+            className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+          />
+        </PaginationItem>
+        
+        {/* First page */}
+        {currentPage > 3 && (
+          <>
+            <PaginationItem>
+              <PaginationLink 
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handlePageChange(1)
+                }}
+              >
+                1
+              </PaginationLink>
+            </PaginationItem>
+            {currentPage > 4 && (
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
+            )}
+          </>
+        )}
+        
+        {/* Page numbers around current page */}
+        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+          let pageNum
+          if (totalPages <= 5) {
+            pageNum = i + 1
+          } else if (currentPage <= 3) {
+            pageNum = i + 1
+          } else if (currentPage >= totalPages - 2) {
+            pageNum = totalPages - 4 + i
+          } else {
+            pageNum = currentPage - 2 + i
+          }
+          
+          if (pageNum < 1 || pageNum > totalPages) return null
+          
+          return (
+            <PaginationItem key={pageNum}>
+              <PaginationLink
+                href="#"
+                isActive={pageNum === currentPage}
+                onClick={(e) => {
+                  e.preventDefault()
+                  handlePageChange(pageNum)
+                }}
+              >
+                {pageNum}
+              </PaginationLink>
+            </PaginationItem>
+          )
+        })}
+        
+        {/* Last page */}
+        {currentPage < totalPages - 2 && (
+          <>
+            {currentPage < totalPages - 3 && (
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
+            )}
+            <PaginationItem>
+              <PaginationLink 
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handlePageChange(totalPages)
+                }}
+              >
+                {totalPages}
+              </PaginationLink>
+            </PaginationItem>
+          </>
+        )}
+        
+        <PaginationItem>
+          <PaginationNext 
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              if (currentPage < totalPages) handlePageChange(currentPage + 1)
+            }}
+            className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+          />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
+  )
 
   const getSiteColor = (site: string) => {
     const colors: { [key: string]: string } = {
@@ -166,14 +301,21 @@ const PropertiesShadcnRoute: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Mieszkanieo</h1>
           <p className="text-muted-foreground">
-            {properties.length} ogłoszeń
+            {properties.length} ogłoszeń {totalPages > 1 && `• Strona ${currentPage} z ${totalPages}`}
           </p>
         </div>
+        
+        {/* Top Pagination */}
+        {totalPages > 1 && (
+          <div className="absolute left-1/2 transform -translate-x-1/2">
+            <PaginationComponent />
+          </div>
+        )}
       </div>
 
       {/* Properties Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-0">
-        {properties.map((property) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
+        {currentProperties.map((property) => (
           <Card
             key={property.id}
             className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-80 flex flex-col py-0 gap-0"
@@ -243,6 +385,9 @@ const PropertiesShadcnRoute: React.FC = () => {
           </Card>
         ))}
       </div>
+
+      {/* Bottom Pagination */}
+      {totalPages > 1 && <PaginationComponent />}
 
       {!loading && properties.length === 0 && (
         <Card>
