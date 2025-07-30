@@ -1,18 +1,21 @@
 {
   "name": "mieszkanieo",
-  "version": "1.0.0", 
+  "version": "1.0.0",
   "description": "mieszkanieo",
   "scripts": {
     "frontend:dev": "cd frontend && npm run dev",
     "frontend:build": "cd frontend && npm run build",
     "backend:dev": "cd backend && npm run dev",
     "backend:build": "cd backend && npm run build",
-    "tauri:build": "cargo tauri build",
-    "exe": "npm run frontend:build && npm run backend:build && cd src-tauri && cargo tauri build"
+    "tauri:dev": "cargo tauri build --debug",
+    "tauri:release": "npm run frontend:build && npm run backend:build && cd src-tauri && cargo tauri build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nokocu/mieszkanieo.git"
   },
-  "author": "nokocu"
+  "author": "nokocu",
+  "dependencies": {
+    "@tauri-apps/api": "^2.7.0"
+  }
 }
