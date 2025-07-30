@@ -19,7 +19,7 @@ const limiter = rateLimit({
 // middleware
 app.use(limiter);
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'file://'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' })); // limit JSON payload size
@@ -664,15 +664,19 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
     for (const site of sites) {
       console.log(`Processing site: ${site} for job ${jobId}`);
       
-      // determine config file
-      const configFile = path.join(__dirname, 'scraper', 'cfg', `${site}.json`);
+      // determine config file and script paths
+      // in development: __dirname = backend/dist, so go up to backend/
+      // in production: __dirname = backend/dist, so go up to backend/
+      const backendSrc = path.join(__dirname, '..');
+      const configFile = path.join(backendSrc, 'scraper', 'cfg', `${site}.json`);
+      const scriptPath = path.join(backendSrc, 'scraper_entry.py');
       
       // determine max pages
       const maxPages = sitePages[site] && sitePages[site] !== 'all' ? sitePages[site] : 'all';
       
       // prepare python command
       const pythonArgs = [
-        path.join(__dirname, 'scraper_entry.py'),
+        scriptPath,
         configFile,
         city.toLowerCase(),
         jobId  // pass job ID for status updates
@@ -682,8 +686,45 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
         pythonArgs.push(maxPages);
       }
       
+      // determine python executable path
+      let pythonPath: string;
+      
+      // check if we're running in electron environment
+      const isElectron = typeof process.versions?.electron !== 'undefined';
+      
+      if (process.env.NODE_ENV === 'production' && isElectron) {
+        // production electron - use bundled python from app resources
+        const isDev = require('electron-is-dev');
+        
+        if (isDev) {
+          // development mode - use local python-portable
+          const localPythonPath = path.join(__dirname, '..', 'python-portable', 'Scripts', 'python.exe');
+          const fs = require('fs');
+          pythonPath = fs.existsSync(localPythonPath) ? localPythonPath : 'python';
+        } else {
+          // production mode - use bundled python from app resources
+          const resourcesPath = (process as any).resourcesPath || path.join(process.cwd(), 'resources');
+          pythonPath = path.join(resourcesPath, 'python-portable', 'Scripts', 'python.exe');
+        }
+      } else {
+        // development or standalone - use local python-portable or venv
+        // from backend/dist, go up two levels to project root
+        const localPythonPath = path.join(__dirname, '..', '..', 'python-portable', 'Scripts', 'python.exe');
+        const venvPython = path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe');
+        const fs = require('fs');
+        
+        if (fs.existsSync(localPythonPath)) {
+          pythonPath = localPythonPath;
+        } else if (fs.existsSync(venvPython)) {
+          pythonPath = venvPython;
+        } else {
+          pythonPath = 'python';
+        }
+      }
+      
+      console.log(`using python: ${pythonPath}`);
+      
       // run python scraper
-      const pythonPath = path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe');
       const pythonProcess = spawn(pythonPath, ['-u', ...pythonArgs]);
       
       let output = '';

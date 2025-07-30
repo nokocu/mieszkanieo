@@ -1,16 +1,69 @@
 {
   "name": "mieszkanieo",
   "version": "1.0.0", 
-  "description": "mieszkanieo",
+  "description": "mieszkanieo - real estate scraper electron app",
+  "main": "dist/main.js",
   "scripts": {
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\" \"wait-on http://localhost:8000 && electron .\"",
+    "build": "npm run backend:build && npm run frontend:build && npm run electron:build",
+    "build:python": "node scripts/bundle-python.js",
+    "prebuild": "npm run build:python",
+    "backend:dev": "cd backend && npm run dev",
+    "backend:build": "cd backend && npm run build",
     "frontend:dev": "cd frontend && npm run dev",
     "frontend:build": "cd frontend && npm run build",
-    "backend:dev": "cd backend && npm run dev",
-    "backend:build": "cd backend && npm run build"
+    "electron:dev": "electron .",
+    "electron:build": "tsc -p electron",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "start": "npm run build && electron ."
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nokocu/mieszkanieo.git"
   },
-  "author": "nokocu"
+  "author": "nokocu",
+  "dependencies": {
+    "electron-is-dev": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "concurrently": "^8.2.2",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "typescript": "^5.3.3",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.nokocu.mieszkanieo",
+    "productName": "Mieszkanieo",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "backend/dist/**/*",
+      "frontend/dist/**/*",
+      "backend/node_modules/**/*",
+      "backend/*.db",
+      "backend/scraper/**/*",
+      "backend/requirements.txt",
+      "backend/scraper_entry.py",
+      "python-portable/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "python-portable",
+        "to": "python-portable"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
 }
