@@ -300,7 +300,7 @@ const PropertiesShadcnRoute: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Mieszkanieo</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Ogłoszenia</h1>
             <p className="text-muted-foreground">
               Ładowanie ogłoszeń...
             </p>
@@ -322,9 +322,9 @@ const PropertiesShadcnRoute: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Mieszkanieo</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Ogłoszenia</h1>
           <p className="text-muted-foreground">
-            {properties.length} ogłoszeń
+            {properties.length} łącznie
           </p>
         </div>
 

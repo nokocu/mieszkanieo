@@ -61,7 +61,7 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton size="lg" asChild>
               <a>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <Building className="size-4" />
+                  <img src="/favicon.ico"></img>
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">Mieszkanieo</span>
@@ -75,7 +75,7 @@ export function App({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 
 
-      <SidebarContent>
+      <SidebarContent className="sidebar-scroll">
         {/* FILTERING SECTION */}
         <SidebarGroup className="pt-0">
 

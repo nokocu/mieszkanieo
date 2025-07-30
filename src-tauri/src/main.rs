@@ -33,13 +33,12 @@ fn main() {
                 let window = app.get_webview_window("main").unwrap();
                 window.open_devtools();
             }
-            // start backend server and log output to file
+            // start backend server
             let exe_path = std::env::current_exe().unwrap();
             let exe_dir = exe_path.parent().unwrap();
+            let server_js_path = exe_dir.join("backend").join("server.js");
             let log_path = exe_dir.join("backend.log");
             let log_file = std::fs::File::create(log_path).expect("could not create log file");
-            // path to server.js
-            let server_js_path = exe_dir.join("backend").join("server.js");
 
             #[cfg(windows)]
             use std::os::windows::process::CommandExt;
