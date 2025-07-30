@@ -35,12 +35,11 @@ fn main() {
             }
             // start backend server and log output to file
             let exe_path = std::env::current_exe().unwrap();
-            let log_path = exe_path.parent().unwrap().join("backend.log");
+            let exe_dir = exe_path.parent().unwrap();
+            let log_path = exe_dir.join("backend.log");
             let log_file = std::fs::File::create(log_path).expect("could not create log file");
-            let project_root = exe_path
-                .parent().unwrap()
-                .parent().unwrap()
-                .parent().unwrap();
+            // path to server.js
+            let server_js_path = exe_dir.join("backend").join("server.js");
 
             #[cfg(windows)]
             use std::os::windows::process::CommandExt;
@@ -48,8 +47,8 @@ fn main() {
             let creation_flags = 0x08000000; // CREATE_NO_WINDOW
 
             let mut backend_cmd = Command::new("node");
-            backend_cmd.arg("../backend/server.js")
-                .current_dir(project_root)
+            backend_cmd.arg(server_js_path)
+                .current_dir(exe_dir)
                 .stdout(log_file.try_clone().unwrap())
                 .stderr(log_file);
             #[cfg(windows)]
