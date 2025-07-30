@@ -1,0 +1,27 @@
+{
+  "productName": "mieszkanieo",
+  "identifier": "com.mieszkanieo.app",
+  "version": "1.0.0",
+  "build": {
+    "beforeBuildCommand": "npm run frontend:build && npm run backend:build",
+    "beforeDevCommand": "npm run frontend:dev && npm run backend:dev",
+    "devUrl": "http://localhost:3000",
+    "frontendDist": "../frontend/dist"
+  },
+  "app": {
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 600,
+        "resizable": true,
+        "title": "Mieszkanieo",
+        "width": 800
+      }
+    ]
+  },
+  "bundle": {},
+  "plugins": {}
+}

@@ -62,3 +62,17 @@ backend/server.js
 misc/
 backend-old/
 .venv/
+
+# Generated schemas and assets
+src-tauri/gen/
+ 
+# Rust/Tauri
+src-tauri/target/
+src-tauri/.cargo/
+src-tauri/Cargo.lock
+
+# Frontend build
+frontend/dist/
+
+# Tauri build output
+src-tauri/dist/

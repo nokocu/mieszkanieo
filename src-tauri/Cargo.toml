@@ -1,0 +1,13 @@
+[package]
+name = "mieszkanieo"
+version = "1.0.0"
+authors = ["nokocu"]
+edition = "2021"
+
+[dependencies]
+tauri = { version = "2.7.0", features = [] }
+serde = "1"
+serde_json = "1"
+
+[build-dependencies]
+tauri-build = { version = "2.3.1", features = [] }
