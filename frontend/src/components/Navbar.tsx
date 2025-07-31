@@ -20,8 +20,13 @@ import { toast } from "sonner"
 export function Navbar() {
   // dark mode state
   const [darkMode, setDarkMode] = React.useState(() => {
-    // check system preference on initialization
+    // check localStorage
     if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme')
+      if (savedTheme) {
+        return savedTheme === 'dark'
+      }
+      // if no saved theme check system preference
       return window.matchMedia('(prefers-color-scheme: dark)').matches
     }
     return false
@@ -77,14 +82,18 @@ export function Navbar() {
     // set initial dark mode class
     document.documentElement.classList.toggle('dark', darkMode)
 
-    // listen for system preference changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleChange = (e: MediaQueryListEvent) => {
-      setDarkMode(e.matches)
-    }
+    // only listen for system preference changes if no manual preference is saved
+    const savedTheme = localStorage.getItem('theme')
+    if (!savedTheme) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+      const handleChange = (e: MediaQueryListEvent) => {
+        setDarkMode(e.matches)
+        document.documentElement.classList.toggle('dark', e.matches)
+      }
 
-    mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
+      mediaQuery.addEventListener('change', handleChange)
+      return () => mediaQuery.removeEventListener('change', handleChange)
+    }
   }, [darkMode])
 
   // check chromedriver compatibility on mount
@@ -115,8 +124,14 @@ export function Navbar() {
   }, [])
 
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode)
-    document.documentElement.classList.toggle('dark', !darkMode)
+    const newDarkMode = !darkMode
+    setDarkMode(newDarkMode)
+    
+    // save theme preference to localStorage
+    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light')
+    
+    // apply theme class
+    document.documentElement.classList.toggle('dark', newDarkMode)
   }
 
   // handle city change - update localStorage and dispatch event
