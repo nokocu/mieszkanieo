@@ -74,5 +74,24 @@ export const propertyService = {
       }
       return { success: false, error: 'Network error' }
     }
+  },
+
+  async getChromedriverStatus(): Promise<{ 
+    compatible: boolean, 
+    message: string, 
+    needs_chrome_update?: boolean,
+    error?: string 
+  }> {
+    try {
+      const response = await api.get('/chromedriver-status')
+      return response.data
+    } catch (error: any) {
+      console.error('Error checking ChromeDriver status:', error)
+      return { 
+        compatible: false, 
+        message: 'Failed to check ChromeDriver status',
+        error: error.response?.data?.error || 'Network error'
+      }
+    }
   }
 }

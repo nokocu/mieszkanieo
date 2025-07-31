@@ -27,6 +27,19 @@ export function Navbar() {
     return false
   })
 
+  // chromedriver compatibility state
+  const [chromedriverStatus, setChromedriverStatus] = React.useState<{
+    compatible: boolean
+    checking: boolean
+    needsChromeUpdate: boolean
+    message: string
+  }>({
+    compatible: false,
+    checking: true,
+    needsChromeUpdate: false,
+    message: 'Sprawdzanie kompatybilności...'
+  })
+
   // refresh states
   const [refreshing, setRefreshing] = React.useState(false)
   const [refreshJobId, setRefreshJobId] = React.useState<string | null>(null)
@@ -74,6 +87,33 @@ export function Navbar() {
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [darkMode])
 
+  // check chromedriver compatibility on mount
+  React.useEffect(() => {
+    const checkChromedriverStatus = async () => {
+      setChromedriverStatus(prev => ({ ...prev, checking: true }))
+      
+      try {
+        const status = await propertyService.getChromedriverStatus()
+        
+        setChromedriverStatus({
+          compatible: status.compatible,
+          checking: false,
+          needsChromeUpdate: status.needs_chrome_update || false,
+          message: status.message
+        })
+      } catch (error) {
+        setChromedriverStatus({
+          compatible: false,
+          checking: false,
+          needsChromeUpdate: false,
+          message: 'Nie udało się sprawdzić kompatybilności'
+        })
+      }
+    }
+
+    checkChromedriverStatus()
+  }, [])
+
   const toggleDarkMode = () => {
     setDarkMode(!darkMode)
     document.documentElement.classList.toggle('dark', !darkMode)
@@ -101,7 +141,7 @@ export function Navbar() {
   }
 
   const enabledSitesCount = Object.values(refreshSites).filter(enabled => enabled).length
-  const canRefresh = refreshCity.trim() !== '' && enabledSitesCount > 0
+  const canRefresh = refreshCity.trim() !== '' && enabledSitesCount > 0 && chromedriverStatus.compatible && !chromedriverStatus.checking
 
   const handleRefresh = async () => {
     if (!canRefresh) return
@@ -329,6 +369,11 @@ export function Navbar() {
                       <RefreshCw className="h-3 w-3 mr-2 animate-spin" />
                       Ładowanie...
                     </>
+                  ) : chromedriverStatus.checking ? (
+                    <>
+                      <RefreshCw className="h-3 w-3 mr-2 animate-spin" />
+                      Sprawdzanie...
+                    </>
                   ) : (
                     <>
                       <RefreshCw className="h-3 w-3 mr-2" />
@@ -337,10 +382,12 @@ export function Navbar() {
                   )}
                 </Button>
 
-                {!canRefresh && (
+                {!canRefresh && !refreshing && (
                   <p className="text-xs text-muted-foreground text-center mt-2">
-                    {refreshCity.trim() === '' && 'Podaj nazwę miasta'}
-                    {refreshCity.trim() !== '' && enabledSitesCount === 0 && 'Wybierz portale'}
+                    {chromedriverStatus.checking && 'Sprawdzanie kompatybilności...'}
+                    {!chromedriverStatus.checking && !chromedriverStatus.compatible && 'Zaktualizuj Google Chrome do nowszej wersji aby kontynuować'}
+                    {!chromedriverStatus.checking && chromedriverStatus.compatible && refreshCity.trim() === '' && 'Podaj nazwę miasta'}
+                    {!chromedriverStatus.checking && chromedriverStatus.compatible && refreshCity.trim() !== '' && enabledSitesCount === 0 && 'Wybierz portale'}
                   </p>
                 )}
               </div>

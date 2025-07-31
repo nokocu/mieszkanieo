@@ -764,6 +764,78 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
   }
 }
 
+// chromedriver status check
+app.get('/api/chromedriver-status', async (req, res) => {
+  try {
+    const { spawn } = require('child_process');
+    const path = require('path');
+    
+    // Determine Python executable path
+    let pythonPath: string;
+    if (process.env.NODE_ENV === 'production') {
+      pythonPath = path.join(__dirname, '..', 'redistributable', 'python', 'python.exe');
+    } else {
+      pythonPath = path.join(__dirname, '..', 'redistributable', 'python', 'python.exe');
+    }
+    
+    // Run ChromeDriver status check
+    const python = spawn(pythonPath, ['-c', `
+import sys
+import os
+backend_dir = r"${__dirname.replace(/\\/g, '\\\\')}"
+sys.path.insert(0, backend_dir)
+from services.chromedriver_service import chromedriver_service
+import json
+result = chromedriver_service.check_chromedriver_status()
+print(json.dumps(result))
+`], {
+      cwd: __dirname,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    
+    let stdout = '';
+    let stderr = '';
+    
+    python.stdout.on('data', (data: Buffer) => {
+      stdout += data.toString();
+    });
+    
+    python.stderr.on('data', (data: Buffer) => {
+      stderr += data.toString();
+    });
+    
+    python.on('close', (code: number) => {
+      if (code === 0) {
+        try {
+          const result = JSON.parse(stdout.trim());
+          res.json(result);
+        } catch (e) {
+          res.status(500).json({
+            compatible: false,
+            message: 'Failed to parse ChromeDriver status',
+            error: 'JSON parse error'
+          });
+        }
+      } else {
+        console.error('ChromeDriver check stderr:', stderr);
+        res.status(500).json({
+          compatible: false,
+          message: 'ChromeDriver status check failed',
+          error: stderr
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error('ChromeDriver status error:', error);
+    res.status(500).json({
+      compatible: false,
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // health
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
