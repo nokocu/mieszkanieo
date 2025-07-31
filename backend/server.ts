@@ -683,7 +683,18 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
       }
       
       // run python scraper
-      const pythonPath = path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe');
+      // use portable python.exe in build, venv in dev
+      let pythonPath: string;
+      const portablePython = path.join(__dirname, '..', 'python.exe');
+      const venvPython = path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe');
+      const fs = require('fs');
+      if (fs.existsSync(portablePython)) {
+        pythonPath = portablePython;
+      } else if (fs.existsSync(venvPython)) {
+        pythonPath = venvPython;
+      } else {
+        pythonPath = 'python'; // fallback to system python
+      }
       const pythonProcess = spawn(pythonPath, ['-u', ...pythonArgs]);
       
       let output = '';

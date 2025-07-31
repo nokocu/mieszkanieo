@@ -15,7 +15,11 @@ use std::sync::{Arc, Mutex};
 #[tauri::command]
 fn run_python_script(script: String) -> String {
     // run python script and return output
-    let output = Command::new("python")
+    // use portable python.exe from release folder
+    let exe_path = std::env::current_exe().unwrap();
+    let exe_dir = exe_path.parent().unwrap();
+    let python_path = exe_dir.join("python.exe");
+    let output = Command::new(python_path)
         .arg(script)
         .output()
         .expect("failed to run python script");
@@ -45,7 +49,9 @@ fn main() {
             #[cfg(windows)]
             let creation_flags = 0x08000000; // CREATE_NO_WINDOW
 
-            let mut backend_cmd = Command::new("node");
+            // Use portable node.exe from src-dependencies (copied to release folder)
+            let node_path = exe_dir.join("node.exe");
+            let mut backend_cmd = Command::new(node_path);
             backend_cmd.arg(server_js_path)
                 .current_dir(exe_dir)
                 .stdout(log_file.try_clone().unwrap())
