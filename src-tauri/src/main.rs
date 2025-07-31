@@ -26,6 +26,7 @@ fn run_python_script(script: String) -> String {
 
 fn main() {
     Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![run_python_script])
         .setup(|app| {
             // devtools

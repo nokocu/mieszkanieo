@@ -100,8 +100,6 @@ Mieszkanieo is a real estate aggregator that scrapes property listings from majo
 ├── src-tauri/         # Tauri desktop app
 ├── scripts/           # Build automation
 ├── redistributable/   # Embedded Python + Node.js
-├── release/           # Production build output
-└── release-debug/     # Debug build output
 ```
 
 ## License

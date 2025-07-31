@@ -16,6 +16,7 @@
   },
   "author": "nokocu",
   "dependencies": {
-    "@tauri-apps/api": "^2.7.0"
+    "@tauri-apps/api": "^2.7.0",
+    "@tauri-apps/plugin-opener": "^2.4.0"
   }
 }

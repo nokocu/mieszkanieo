@@ -13,6 +13,7 @@ import {
   PaginationEllipsis,
 } from "./ui/pagination"
 import { MapPin, Building, DoorClosed, Ruler, ArrowBigUp } from 'lucide-react'
+import { openUrl } from '@tauri-apps/plugin-opener'
 
 const PropertiesShadcnRoute: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([])
@@ -342,7 +343,7 @@ const PropertiesShadcnRoute: React.FC = () => {
           <Card
             key={property.id}
             className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-80 flex flex-col py-0 gap-0"
-            onClick={() => window.open(property.link, '_blank')}
+            onClick={() => openUrl(property.link)}
           >
             {/* Image Section */}
             <div className="h-48 relative bg-muted overflow-hidden">
