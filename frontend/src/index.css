@@ -152,3 +152,20 @@ html {
   background: var(--sidebar);
 }
 
+/* toast styling */
+[data-sonner-toast] [data-description] {
+  color: var(--muted-foreground) !important;
+}
+
+[data-sonner-toast] [data-title] {
+  color: var(--popover-foreground) !important;
+}
+
+.dark [data-sonner-toast] [data-description] {
+  color: var(--muted-foreground) !important;
+}
+
+.dark [data-sonner-toast] [data-title] {
+  color: var(--popover-foreground) !important;
+}
+

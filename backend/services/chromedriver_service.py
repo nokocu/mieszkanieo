@@ -79,7 +79,7 @@ class ChromeDriverService:
                         log_message(f"ChromeDriver still failing after update: {new_error_msg or error_msg}", "WARNING")
                         return {
                             "compatible": False,
-                            "message": "ChromeDriver updated but still not compatible",
+                            "message": "ChromeDriver updated but still errors out",
                             "needs_chrome_update": True,
                             "error": new_error_msg or error_msg
                         }
