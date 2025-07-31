@@ -400,7 +400,7 @@ export function Navbar() {
                 {!canRefresh && !refreshing && (
                   <p className="text-xs text-muted-foreground text-center mt-2">
                     {chromedriverStatus.checking && 'Sprawdzanie kompatybilności...'}
-                    {!chromedriverStatus.checking && !chromedriverStatus.compatible && 'Zaktualizuj Google Chrome do nowszej wersji aby kontynuować'}
+                    {!chromedriverStatus.checking && !chromedriverStatus.compatible && 'Coś poszło nie tak. Spróbuj zaktualizować Google Chrome i zrestartować aplikację'}
                     {!chromedriverStatus.checking && chromedriverStatus.compatible && refreshCity.trim() === '' && 'Podaj nazwę miasta'}
                     {!chromedriverStatus.checking && chromedriverStatus.compatible && refreshCity.trim() !== '' && enabledSitesCount === 0 && 'Wybierz portale'}
                   </p>

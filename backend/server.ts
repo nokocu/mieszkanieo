@@ -805,11 +805,34 @@ print(json.dumps(result))
     });
     
     python.on('close', (code: number) => {
+      // log the raw output for debugging
+      console.log('ChromeDriver check - Exit code:', code);
+      console.log('ChromeDriver check - stdout:', JSON.stringify(stdout));
+      console.log('ChromeDriver check - stderr:', JSON.stringify(stderr));
+      
       if (code === 0) {
         try {
-          const result = JSON.parse(stdout.trim());
+          // clean the stdout by taking only the last line that looks like JSON
+          const lines = stdout.trim().split('\n');
+          let jsonLine = '';
+          
+          // find the line that starts with { (JSON)
+          for (const line of lines.reverse()) {
+            if (line.trim().startsWith('{')) {
+              jsonLine = line.trim();
+              break;
+            }
+          }
+          
+          if (!jsonLine) {
+            throw new Error('No JSON found in output');
+          }
+          
+          const result = JSON.parse(jsonLine);
           res.json(result);
         } catch (e) {
+          console.error('JSON parse error:', e);
+          console.error('Raw stdout:', stdout);
           res.status(500).json({
             compatible: false,
             message: 'Failed to parse ChromeDriver status',
