@@ -9,6 +9,7 @@ import sys
 import tempfile
 import zipfile
 import shutil
+import time
 from pathlib import Path
 from typing import Dict, Any, Tuple
 import requests
@@ -43,14 +44,15 @@ class ChromeDriverService:
                     "needs_chrome_update": False
                 }
             
-            # 2: Check if version mismatch
-            if "This version of ChromeDriver only supports Chrome version" in error_msg:
+            # 2: If any error occurs try to update uc
+            if error_msg:
                 # 3: Try to update ChromeDriver
                 update_success, update_msg = self._update_chromedriver()
                 
                 if update_success:
+                    
                     # 4: Test again after update
-                    is_working_after_update, _ = self._test_chromedriver()
+                    is_working_after_update, new_error_msg = self._test_chromedriver()
                     
                     if is_working_after_update:
                         return {
@@ -59,12 +61,12 @@ class ChromeDriverService:
                             "needs_chrome_update": False
                         }
                     else:
-                        # likely chrome needs update
+                        # Still failing after update - likely chrome needs update
                         return {
                             "compatible": False,
-                            "message": "ChromeDriver updated but Chrome version is too old",
+                            "message": "ChromeDriver updated but still not compatible",
                             "needs_chrome_update": True,
-                            "error": error_msg
+                            "error": new_error_msg or error_msg
                         }
                 else:
                     return {
@@ -73,14 +75,6 @@ class ChromeDriverService:
                         "needs_chrome_update": False,
                         "error": error_msg
                     }
-            else:
-                # different error not version related
-                return {
-                    "compatible": False,
-                    "message": "ChromeDriver error (not version related)",
-                    "needs_chrome_update": False,
-                    "error": error_msg
-                }
                 
         except Exception as e:
             return {
@@ -93,8 +87,17 @@ class ChromeDriverService:
     def _test_chromedriver(self) -> Tuple[bool, str]:
         """Test if ChromeDriver can start successfully"""
         try:
+            # options
+            options = uc.ChromeOptions()
+            options.add_argument('--headless')
+            
             # create a temporary chrome instance
-            test_driver = uc.Chrome(use_subprocess=False, headless=True)
+            test_driver = uc.Chrome(
+                options=options,
+                use_subprocess=False,
+                headless=True,
+                version_main=None
+            )
             test_driver.quit()
             return True, ""
         except SessionNotCreatedException as e:
