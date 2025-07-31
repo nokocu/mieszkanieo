@@ -683,19 +683,22 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
       }
       
       // run python scraper
-      // use portable python.exe in build, venv in dev
+      // use portable python
       let pythonPath: string;
-      const portablePython = path.join(__dirname, '..', 'python.exe');
       const venvPython = path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe');
+      const redistPython = path.join(__dirname, '..', 'redistributable', 'python', 'python.exe');
       const fs = require('fs');
-      if (fs.existsSync(portablePython)) {
-        pythonPath = portablePython;
-      } else if (fs.existsSync(venvPython)) {
+      if (fs.existsSync(venvPython)) {
         pythonPath = venvPython;
+      } else if (fs.existsSync(redistPython)) {
+        pythonPath = redistPython;
       } else {
-        pythonPath = 'python'; // fallback to system python
+        throw new Error('No valid Python executable found: .venv or redistributable/python/python.exe');
       }
-      const pythonProcess = spawn(pythonPath, ['-u', ...pythonArgs]);
+      // set working directory to backend for correct imports
+      const pythonProcess = spawn(pythonPath, ['-u', ...pythonArgs], {
+        cwd: __dirname
+      });
       
       let output = '';
       let errorOutput = '';
@@ -735,7 +738,11 @@ async function runScrapingJob(jobId: string, city: string, sites: string[], site
             resolve(code);
           } else {
             console.error(`[${site}] Failed with exit code: ${code}`);
-            const error = `Site ${site} failed: ${errorOutput || 'Unknown error'}`;
+            let errorDetails = errorOutput.trim();
+            if (!errorDetails) {
+              errorDetails = `No stderr output.\nExit code: ${code}\nCommand: ${pythonPath} -u ${pythonArgs.join(' ')}\nStdout:\n${output.trim()}`;
+            }
+            const error = `Site ${site} failed: ${errorDetails}`;
             updateProgress(progress, totalFound, 'failed', undefined, error);
             reject(new Error(error));
           }

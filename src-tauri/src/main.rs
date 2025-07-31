@@ -4,9 +4,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::{Builder, Manager};
-use tauri::State;
-use std::fs::OpenOptions;
-use std::io::Write;
 use std::process::{Command, Child};
 use std::sync::{Arc, Mutex};
 
@@ -49,8 +46,8 @@ fn main() {
             #[cfg(windows)]
             let creation_flags = 0x08000000; // CREATE_NO_WINDOW
 
-            // Use portable node.exe from src-dependencies (copied to release folder)
-            let node_path = exe_dir.join("node.exe");
+            // use portable node
+            let node_path = exe_dir.join("redistributable").join("node").join("node.exe");
             let mut backend_cmd = Command::new(node_path);
             backend_cmd.arg(server_js_path)
                 .current_dir(exe_dir)

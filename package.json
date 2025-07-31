@@ -8,7 +8,7 @@
     "backend:dev": "cd backend && npm run dev",
     "backend:build": "cd backend && npm run build",
     "tauri:dev": "cargo tauri build --debug",
-    "tauri:release": "npm run frontend:build && npm run backend:build && cd src-tauri && cargo tauri build && node package_dist.js"
+    "tauri:release": "npm run frontend:build && npm run backend:build && cd src-tauri && cargo tauri build && ..\\scripts\\release.bat"
   },
   "repository": {
     "type": "git",

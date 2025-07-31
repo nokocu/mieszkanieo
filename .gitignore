@@ -60,9 +60,8 @@ backend/server.js
 
 #nkc
 misc/
-backend-old/
 .venv/
-redist/
+redistributable/
 release/
 
 # Generated schemas and assets

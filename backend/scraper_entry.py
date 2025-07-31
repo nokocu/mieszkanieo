@@ -1,11 +1,12 @@
-
 """
 Entry point for mieszkanieo scraper
 """
-
 import sys
-import json
 import os
+import json
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+print("CWD:", os.getcwd())
+print("sys.path:", sys.path)
 from scraper import PropertyScraper
 
 
