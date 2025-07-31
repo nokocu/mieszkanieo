@@ -63,6 +63,7 @@ misc/
 .venv/
 redistributable/
 release/
+release-debug/
 
 # Generated schemas and assets
 src-tauri/gen/

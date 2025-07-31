@@ -44,7 +44,7 @@ if %errorlevel% neq 0 (
 
 REM Copy backend
 echo Copying backend...
-xcopy "%BACKEND_SRC%" "%OUTPUT_DIR%\backend" /e /i /h /y
+xcopy "%BACKEND_SRC%" "%OUTPUT_DIR%\backend" /e /i /h /y /q
 if %errorlevel% neq 0 (
     echo Failed to copy backend
     pause
@@ -54,7 +54,7 @@ if %errorlevel% neq 0 (
 REM Copy venv if it exists
 if exist "%VENV_SRC%" (
     echo Copying virtual environment...
-    xcopy "%VENV_SRC%" "%OUTPUT_DIR%\.venv" /e /i /h /y
+    xcopy "%VENV_SRC%" "%OUTPUT_DIR%\.venv" /e /i /h /y /q
     if %errorlevel% neq 0 (
         echo Failed to copy virtual environment
         pause
@@ -67,7 +67,7 @@ if exist "%VENV_SRC%" (
 REM Copy redistributable
 if exist "%REDISTRIBUTABLE_SRC%" (
     echo Copying redistributable...
-    xcopy "%REDISTRIBUTABLE_SRC%" "%OUTPUT_DIR%\redistributable" /e /i /h /y
+    xcopy "%REDISTRIBUTABLE_SRC%" "%OUTPUT_DIR%\redistributable" /e /i /h /y /q
     if %errorlevel% neq 0 (
         echo Failed to copy redistributable
         pause
