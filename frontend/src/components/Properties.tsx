@@ -427,7 +427,7 @@ const PropertiesShadcnRoute: React.FC = () => {
             <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">Nie znaleziono ogłoszeń</h3>
             <p className="text-muted-foreground">
-              Tutaj powinny być ogłoszenia...
+              Kliknij przycisk "Odśwież dane" aby załadować nowe ogłoszenia...
             </p>
           </CardContent>
         </Card>

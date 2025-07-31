@@ -19,10 +19,16 @@
         "height": 800,
         "resizable": true,
         "title": "Mieszkanieo",
-        "devtools": true
+        "devtools": true,
+        "decorations": true,
+        "transparent": false
       }
     ]
   },
-  "bundle": {},
+  "bundle": {
+    "icon": [
+      "icons/icon.ico"
+    ]
+  },
   "plugins": {}
 }
