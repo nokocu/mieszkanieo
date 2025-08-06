@@ -1,6 +1,8 @@
 # Mieszkanieo - Polish real estate aggregator
+![preview.png](preview.png)
 A desktop application aimed for Polish users for scraping and browsing real estate listings from multiple sources.
 Requirements: Windows 10 22H2+ (WebView installed), Google Chrome installed
+
 
 ## Overview
 Mieszkanieo is a real estate aggregator that scrapes property listings from major Polish real estate websites and presents them in a unified interface. The app features real-time data refresh and advanced filtering capabilities.
